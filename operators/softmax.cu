@@ -3,7 +3,7 @@
 #include <cstdlib>  // for malloc/free
 #include <iostream>
 
-// CPU implementation
+// CPU implementation 
 void softmax_forward_cpu(float *out, const float *inp, int N, int C) {
   for (int i = 0; i < N; i++) {
     const float *inp_row = inp + i * C;
