@@ -1,0 +1,58 @@
+[
+  {
+    "method": "1_eager",
+    "workload": "A_short_in_long_out",
+    "concurrency": 1,
+    "repeats": 3,
+    "ttft_ms": 1301.9081000238657,
+    "ttft_p95_ms": 1314.6071997471154,
+    "tpot_ms": 218.0679519844102,
+    "tpot_p95_ms": 373.50747952839055,
+    "throughput_tps": 4.423942634355962,
+    "vram_alloc_peak_mib": 941.24169921875,
+    "vram_smi_peak_mib": 1075,
+    "extras": {}
+  },
+  {
+    "method": "1_eager",
+    "workload": "A_short_in_long_out",
+    "concurrency": 4,
+    "repeats": 3,
+    "ttft_ms": 5036.682499572635,
+    "ttft_p95_ms": 5077.2459004074335,
+    "tpot_ms": 952.2985834848341,
+    "tpot_p95_ms": 955.7838574689849,
+    "throughput_tps": 4.064303714526247,
+    "vram_alloc_peak_mib": 1024.00439453125,
+    "vram_smi_peak_mib": 1115,
+    "extras": {}
+  },
+  {
+    "method": "1_eager",
+    "workload": "B_long_in_short_out",
+    "concurrency": 1,
+    "repeats": 3,
+    "ttft_ms": 4841.60210005939,
+    "ttft_p95_ms": 5140.274100005627,
+    "tpot_ms": 259.19770318714365,
+    "tpot_p95_ms": 260.3782904033939,
+    "throughput_tps": 2.4780596657793503,
+    "vram_alloc_peak_mib": 983.6435546875,
+    "vram_smi_peak_mib": 1115,
+    "extras": {}
+  },
+  {
+    "method": "1_eager",
+    "workload": "B_long_in_short_out",
+    "concurrency": 4,
+    "repeats": 3,
+    "ttft_ms": 21301.87870003283,
+    "ttft_p95_ms": 21329.705399926752,
+    "tpot_ms": 722.3828903609707,
+    "tpot_p95_ms": 1142.0045644946156,
+    "throughput_tps": 3.0060928380847773,
+    "vram_alloc_peak_mib": 1170.91748046875,
+    "vram_smi_peak_mib": 1379,
+    "extras": {}
+  }
+]

@@ -2,16 +2,16 @@
 ============ Experiment 2 / 四层阶梯对比 ============
 workload              batchmethod            TTFT p50  TPOT p50   tok/s  VRAM MiB
 ---------------------------------------------------------------------------------
-A_short_in_long_out       11_eager            1301.9ms    218.1ms     4.4      1075
-A_short_in_long_out       12_torch_compile    1325.2ms    332.2ms     2.9      1963
+A_short_in_long_out       11_eager             219.1ms    166.7ms     5.9      1864
+A_short_in_long_out       12_torch_compile     201.0ms     65.6ms    15.0      3505
 
-A_short_in_long_out       41_eager            5036.7ms    952.3ms     4.1      1115
-A_short_in_long_out       42_torch_compile    9772.2ms   1187.0ms     3.2      1963
+A_short_in_long_out       41_eager             419.2ms    227.6ms    17.5      1810
+A_short_in_long_out       42_torch_compile     437.1ms    105.3ms    37.0      3509
 
-B_long_in_short_out       11_eager            4841.6ms    259.2ms     2.5      1115
-B_long_in_short_out       12_torch_compile    6287.8ms    415.5ms     1.6      1963
+B_long_in_short_out       11_eager             456.8ms    148.7ms     6.3      1810
+B_long_in_short_out       12_torch_compile     445.4ms     67.8ms    12.6      3512
 
-B_long_in_short_out       41_eager           21301.9ms    722.4ms     3.0      1379
-B_long_in_short_out       42_torch_compile   91310.5ms   1506.5ms     0.9      1963
+B_long_in_short_out       41_eager            1788.6ms    228.4ms    14.4      2046
+B_long_in_short_out       42_torch_compile    1859.4ms    131.5ms    21.8      3588
 
 （缺少: 3_vllm, 4_sglang, 4_openai —— 层3/层4 需要 Linux/云端环境，见对应 bench_*.py 头部说明）

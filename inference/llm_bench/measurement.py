@@ -28,7 +28,7 @@ from pathlib import Path
 
 import torch
 
-DEFAULT_MODEL = "E:/model/Qwen1.5-0.5B"
+DEFAULT_MODEL = "F:/model/Qwen-0.6B"
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "results"
 
 # 两个固定负载：短入长出 / 长入短出
@@ -138,7 +138,9 @@ def hf_measure(model, tokenizer, device, batch, input_len, output_len, seed=0,
     attention_mask = torch.ones(batch, total_len, dtype=torch.long, device=device)
     cache = None if caches is None else caches.get((batch, total_len))
     if cache is None:
-        cache = StaticCache(config=model.config, max_cache_len=total_len)
+        cache = StaticCache(config=model.config, max_batch_size=batch,
+                            max_cache_len=total_len, device=device,
+                            dtype=torch.float16)
     else:
         cache.reset()   # 复用同一组 buffer，保持 data_ptr 不变
 

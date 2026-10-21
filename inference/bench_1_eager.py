@@ -20,7 +20,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
-        dtype=torch.float16,                # 统一 fp16 保证各层同精度
+        torch_dtype=torch.float16,          # 统一 fp16 保证各层同精度
         attn_implementation="sdpa",
     )
     device = args.device if torch.cuda.is_available() else "cpu"

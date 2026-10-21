@@ -1,31 +1,24 @@
-$ D:\python313\python.exe E:\AI-infra\inference\bench_2_torch_compile.py --concurrency 1,4 --repeats 3
+$ D:\ProgramData\anaconda3\python.exe F:\AI-infra\inference\bench_2_torch_compile.py --concurrency 1,4 --repeats 3
 ============================================================
 [inductor] hook-installed
+[2_torch_compile] 本机 torch 版本缺少 triton.cudagraph_trees_generation_cloning 配置键，已跳过（不影响编译/图捕获，仅关闭跨 generation clone 优化）
 [auto] GPU SM6.1 不被 Triton 支持，降级为 cudagraphs 后端（仅 CUDA Graphs，无算子融合）
 [2_torch_compile] torch.compile({'backend': 'cudagraphs', 'dynamic': False}) —— 仅 decode
 [2_torch_compile] 首次调用会触发后端编译/图捕获（每个 shape 一次，可能持续数分钟）...
   warmup 4 shape(s) ...
-D:\python313\Lib\site-packages\torch\_dynamo\guards.py:1464: RuntimeWarning: Guards may run slower on Python 3.13.0. Consider upgrading to Python 3.13.1+.
-  warnings.warn(
-D:\python313\Lib\site-packages\torch\_dynamo\guards.py:1464: RuntimeWarning: Guards may run slower on Python 3.13.0. Consider upgrading to Python 3.13.1+.
-  warnings.warn(
-D:\python313\Lib\site-packages\torch\_dynamo\guards.py:1464: RuntimeWarning: Guards may run slower on Python 3.13.0. Consider upgrading to Python 3.13.1+.
-  warnings.warn(
-D:\python313\Lib\site-packages\torch\_dynamo\guards.py:1464: RuntimeWarning: Guards may run slower on Python 3.13.0. Consider upgrading to Python 3.13.1+.
-  warnings.warn(
-[2_torch_compile] weights allocated: 1287 MiB
-  A_short_in_long_out batch=1: TTFT 1325.2ms | TPOT 332.2ms | 2.9 tok/s | VRAM(smi) 1963MiB
-  A_short_in_long_out batch=4: TTFT 9772.2ms | TPOT 1187.0ms | 3.2 tok/s | VRAM(smi) 1963MiB
-  B_long_in_short_out batch=1: TTFT 6287.8ms | TPOT 415.5ms | 1.6 tok/s | VRAM(smi) 1963MiB
-  B_long_in_short_out batch=4: TTFT 91310.5ms | TPOT 1506.5ms | 0.9 tok/s | VRAM(smi) 1963MiB
+[2_torch_compile] weights allocated: 1578 MiB
+  A_short_in_long_out batch=1: TTFT 201.0ms | TPOT 65.6ms | 15.0 tok/s | VRAM(smi) 3505MiB
+  A_short_in_long_out batch=4: TTFT 437.1ms | TPOT 105.3ms | 37.0 tok/s | VRAM(smi) 3509MiB
+  B_long_in_short_out batch=1: TTFT 445.4ms | TPOT 67.8ms | 12.6 tok/s | VRAM(smi) 3512MiB
+  B_long_in_short_out batch=4: TTFT 1859.4ms | TPOT 131.5ms | 21.8 tok/s | VRAM(smi) 3588MiB
 
 ================= 结果汇总 =================
 workload              batch  TTFT p50  TPOT p50    tok/s  VRAM MiB
 ------------------------------------------------------------------
-A_short_in_long_out       1   1325.2ms    332.2ms      2.9      1963
-A_short_in_long_out       4   9772.2ms   1187.0ms      3.2      1963
-B_long_in_short_out       1   6287.8ms    415.5ms      1.6      1963
-B_long_in_short_out       4  91310.5ms   1506.5ms      0.9      1963
-saved -> E:\AI-infra\inference\results\2_torch_compile.json
+A_short_in_long_out       1    201.0ms     65.6ms     15.0      3505
+A_short_in_long_out       4    437.1ms    105.3ms     37.0      3509
+B_long_in_short_out       1    445.4ms     67.8ms     12.6      3512
+B_long_in_short_out       4   1859.4ms    131.5ms     21.8      3588
+saved -> F:\AI-infra\inference\results\2_torch_compile.json
 ============================================================
-exit_code=0 duration=1557.6s
+exit_code=0 duration=341.2s

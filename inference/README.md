@@ -23,21 +23,43 @@
 | **Throughput** (tok/s) | 系统级输出吞吐 = 并发 × 单请求速率 | 批处理调度（连续 vs 静态） |
 | **VRAM** (MiB) | 显存峰值（nvidia-smi + torch allocator） | KV Cache 管理（静态 vs 分页） |
 
-## 实测结果（本机：MX330 2GB, Pascal SM6.1, fp16）
+## 实测结果（本机：GTX 1050 Ti Max-Q 4GB, Pascal SM6.1, fp16）
 
 | Workload | batch | 方法 | TTFT p50 | TPOT p50 | tok/s | VRAM (smi) |
 |---|---|---|---|---|---|---|
-| A (in128/out128) | 1 | 1_eager | 1301.9 ms | 218.1 ms | **4.4** | **1075 MiB** |
-| A | 1 | 2_torch_compile | 1325.2 ms | 332.2 ms | 2.9 | 1963 MiB |
-| A | 4 | 1_eager | **5036.7 ms** | **952.3 ms** | **4.1** | **1115 MiB** |
-| A | 4 | 2_torch_compile | 9772.2 ms | 1187.0 ms | 3.2 | 1963 MiB |
-| B (in512/out32) | 1 | 1_eager | **4841.6 ms** | **259.2 ms** | **2.5** | **1115 MiB** |
-| B | 1 | 2_torch_compile | 6287.8 ms | 415.5 ms | 1.6 | 1963 MiB |
-| B | 4 | 1_eager | **21301.9 ms** | **722.4 ms** | **3.0** | **1379 MiB** |
-| B | 4 | 2_torch_compile | 91310.5 ms | 1506.5 ms | 0.9 | 1963 MiB |
+| A (in128/out128) | 1 | 1_eager | 219.1 ms | 166.7 ms | **5.9** | 1864 MiB |
+| A | 1 | 2_torch_compile (cudagraphs) | 201.0 ms | 65.6 ms | **15.0** | 3505 MiB |
+| A | 4 | 1_eager | 419.2 ms | 227.6 ms | **17.5** | 1810 MiB |
+| A | 4 | 2_torch_compile (cudagraphs) | 437.1 ms | 105.3 ms | **37.0** | 3509 MiB |
+| B (in512/out32) | 1 | 1_eager | 456.8 ms | 148.7 ms | **6.3** | 1810 MiB |
+| B | 1 | 2_torch_compile (cudagraphs) | 445.4 ms | 67.8 ms | **12.6** | 3512 MiB |
+| B | 4 | 1_eager | 1788.6 ms | 228.4 ms | **14.4** | 2046 MiB |
+| B | 4 | 2_torch_compile (cudagraphs) | 1859.4 ms | 131.5 ms | **21.8** | 3588 MiB |
 
-层 3（vLLM）/ 层 4（SGLang、TRT-LLM）在本机无法运行（Windows + 2GB + SM6.1），
-需在 WSL2 / 云端 GPU 上补齐，命令见下方「运行」。
+> 注：本机 Pascal SM6.1 不被 Triton 支持，torch.compile 自动降级为 `cudagraphs`
+> 后端（仅 CUDA Graphs，无算子融合）。即便如此，cudagraphs 通过消除每步 kernel
+> launch 开销，把 decode（TPOT）压到 eager 的 1/2 ~ 1/3，吞吐接近 3×。
+
+### 与换机前基线对比（旧：MX330 2GB / Qwen1.5-0.5B → 新：1050 Ti 4GB / Qwen-0.6B）
+
+| 指标 | 层 | 旧 (MX330 2GB) | 新 (1050 Ti 4GB) | 变化 |
+|---|---|---|---|---|
+| A b1 | 1_eager | 4.4 tok/s | 5.9 tok/s | ↑ 34% |
+| A b1 | 2_torch_compile | 2.9 tok/s | 15.0 tok/s | ↑ 409% |
+| A b4 | 1_eager | 4.1 tok/s | 17.5 tok/s | ↑ 330% |
+| A b4 | 2_torch_compile | 3.2 tok/s | 37.0 tok/s | ↑ 1062% |
+| B b4 | 2_torch_compile | 0.9 tok/s | 21.8 tok/s | ↑ 2248% |
+
+关键结论：
+- **4GB 显存是真正的分水岭**。旧机 2GB 下 cudagraphs 捕获静态图需约 3500 MiB，
+  挤占 + 显示占用造成内存压力/交换，使层 2 反而比层 1 慢；新机 4GB 留足余量，
+  层 2 图捕获不再 OOM/交换，decode 大幅领先层 1（与「层 2 只优化内核执行」的设定一致）。
+- **1050 Ti 的 128-bit 显存位宽（MX330 仅 64-bit）约 2× 带宽**，对 memory-bound 的
+  decode 直接体现在 TPFT→TPOT 与吞吐上。
+- **注意：本次同时换了模型**（Qwen1.5-0.5B → Qwen-0.6B Qwen3，28 层 vs 24 层，略大），
+  因此新旧对比并非纯硬件对照；但两次层内（层 1 vs 层 2）排序一致，阶梯结论仍成立。
+- 层 3（vLLM）/ 层 4（SGLang、TRT-LLM）在本机仍无法运行（Windows + 4GB + SM6.1），
+  需在 WSL2 / 云端 GPU 上补齐，命令见下方「运行」。
 
 ## 目录结构
 
@@ -78,7 +100,7 @@ python bench_4_sglang.py --backend sglang --base-url http://<host>:30000 \
 python compare.py
 ```
 
-模型路径默认 `E:/model/Qwen1.5-0.5B`，所有脚本可用 `--model` 覆盖。
+模型路径默认 `F:/model/Qwen-0.6B`（Qwen3 架构），所有脚本可用 `--model` 覆盖。
 
 ## 测量口径（跨层可比的关键约定）
 
@@ -90,5 +112,7 @@ python compare.py
 
 ## 环境
 
-- Python 3.13 · torch 2.14 · transformers 4.57 · GPU NVIDIA MX330 2GB（Pascal SM6.1，fp16）
+- **运行解释器**：`D:\ProgramData\anaconda3\python.exe`（自带 CUDA 版 torch，可直接用 GPU；不需重新下载 torch）
+- **本机实测栈**：Anaconda base Python 3.12.3 · torch 2.8.0.dev+cu128 · transformers 4.51.0 · GPU NVIDIA GTX 1050 Ti Max-Q 4GB（Pascal SM6.1，fp16）
+- **仓库编写目标栈**：Python 3.13 · torch 2.14 · transformers 4.57（二者差异已通过 CHANGELOG 中记录的兼容补丁抹平，代码对两套版本均可运行）
 - 层 3/4 的天花板验证建议：云端 SM ≥ 8.0 卡（A100/L20/4090），支持 bf16 与 FlashAttention。

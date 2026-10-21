@@ -1,19 +1,19 @@
-$ D:\python313\python.exe E:\AI-infra\inference\bench_1_eager.py --concurrency 1,4 --repeats 3
+$ D:\ProgramData\anaconda3\python.exe F:\AI-infra\inference\bench_1_eager.py --concurrency 1,4 --repeats 3
 ============================================================
   warmup 2 shape(s) ...
-[1_eager] weights allocated: 914 MiB
-  A_short_in_long_out batch=1: TTFT 1301.9ms | TPOT 218.1ms | 4.4 tok/s | VRAM(smi) 1075MiB
-  A_short_in_long_out batch=4: TTFT 5036.7ms | TPOT 952.3ms | 4.1 tok/s | VRAM(smi) 1115MiB
-  B_long_in_short_out batch=1: TTFT 4841.6ms | TPOT 259.2ms | 2.5 tok/s | VRAM(smi) 1115MiB
-  B_long_in_short_out batch=4: TTFT 21301.9ms | TPOT 722.4ms | 3.0 tok/s | VRAM(smi) 1379MiB
+[1_eager] weights allocated: 1145 MiB
+  A_short_in_long_out batch=1: TTFT 219.1ms | TPOT 166.7ms | 5.9 tok/s | VRAM(smi) 1864MiB
+  A_short_in_long_out batch=4: TTFT 419.2ms | TPOT 227.6ms | 17.5 tok/s | VRAM(smi) 1810MiB
+  B_long_in_short_out batch=1: TTFT 456.8ms | TPOT 148.7ms | 6.3 tok/s | VRAM(smi) 1810MiB
+  B_long_in_short_out batch=4: TTFT 1788.6ms | TPOT 228.4ms | 14.4 tok/s | VRAM(smi) 2046MiB
 
 ================= 结果汇总 =================
 workload              batch  TTFT p50  TPOT p50    tok/s  VRAM MiB
 ------------------------------------------------------------------
-A_short_in_long_out       1   1301.9ms    218.1ms      4.4      1075
-A_short_in_long_out       4   5036.7ms    952.3ms      4.1      1115
-B_long_in_short_out       1   4841.6ms    259.2ms      2.5      1115
-B_long_in_short_out       4  21301.9ms    722.4ms      3.0      1379
-saved -> E:\AI-infra\inference\results\1_eager.json
+A_short_in_long_out       1    219.1ms    166.7ms      5.9      1864
+A_short_in_long_out       4    419.2ms    227.6ms     17.5      1810
+B_long_in_short_out       1    456.8ms    148.7ms      6.3      1810
+B_long_in_short_out       4   1788.6ms    228.4ms     14.4      2046
+saved -> F:\AI-infra\inference\results\1_eager.json
 ============================================================
-exit_code=0 duration=645.2s
+exit_code=0 duration=216.1s

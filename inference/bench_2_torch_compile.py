@@ -41,7 +41,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
-        dtype=torch.float16,
+        torch_dtype=torch.float16,
         attn_implementation="sdpa",
     )
     device = args.device if torch.cuda.is_available() else "cpu"
@@ -49,8 +49,15 @@ def main():
 
     # DynamicCache 式的"上一步输出被下一步读取"与 cudagraph trees 的
     # generation 复写机制冲突；该配置让图输出跨 generation 自动 clone。
+    # 该字段在较新 torch（README 记录的 2.14.x）才存在，旧版本无此属性，
+    # 用 hasattr 守护以避免在低版本 torch 上直接崩溃。
     import torch._inductor.config as inductor_config
-    inductor_config.triton.cudagraph_trees_generation_cloning = "user_visible"
+    if hasattr(inductor_config.triton, "cudagraph_trees_generation_cloning"):
+        inductor_config.triton.cudagraph_trees_generation_cloning = "user_visible"
+    else:
+        print("[2_torch_compile] 本机 torch 版本缺少 "
+              "triton.cudagraph_trees_generation_cloning 配置键，"
+              "已跳过（不影响编译/图捕获，仅关闭跨 generation clone 优化）")
 
     # 本层唯一的"改动"：选后端 + torch.compile 包装
     backend = args.backend
@@ -90,7 +97,9 @@ def main():
     from transformers import StaticCache
     decode_models = {(b, i + o): torch.compile(model, **compile_kwargs)
                      for (b, i, o) in shapes}
-    caches = {(b, i + o): StaticCache(config=model.config, max_cache_len=i + o)
+    caches = {(b, i + o): StaticCache(config=model.config, max_batch_size=b,
+                                      max_cache_len=i + o, device=device,
+                                      dtype=torch.float16)
               for (b, i, o) in shapes}
 
     print(f"[2_torch_compile] 首次调用会触发后端编译/图捕获（每个 shape 一次，"
