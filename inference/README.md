@@ -39,20 +39,6 @@
 层 3（vLLM）/ 层 4（SGLang、TRT-LLM）在本机无法运行（Windows + 2GB + SM6.1），
 需在 WSL2 / 云端 GPU 上补齐，命令见下方「运行」。
 
-### 本机层 2 反而更慢——这本身就是实验结论
-
-torch.compile 的两大收益来源在这张 Pascal 卡上都不成立：
-
-1. **没有算子融合**：Inductor 的 CUDA 代码生成依赖 Triton，要求 SM ≥ 7.0；
-   `--backend auto` 自动降级为纯 cudagraphs（只消 launch 开销）。
-2. **launch 开销本来就不是瓶颈**：MX330 算力极弱，decode 单步是 GPU-bound
-   而非 CPU-launch-bound，图化无从收益。
-3. **显存代价实打实**：4 个 shape 各一套 CUDA graph 池，峰值 1963/2048 MiB
-   顶满显存 → Windows WDDM 换页 → batch=4 时 TTFT 膨胀一个量级。
-
-在 SM ≥ 7.0 的卡（T4/A100/4090）上重跑，层 2 才会呈现教科书形态：
-TPOT 明显下降、TTFT 不变（prefill 不编译）、吞吐基本持平。
-
 ## 目录结构
 
 ```
