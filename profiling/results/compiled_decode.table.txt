@@ -1,46 +1,46 @@
 -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
                                                    Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg    # of Calls  
 -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
-                                          decode_step_0         0.00%       0.000us         0.00%       0.000us       0.000us       20.747s       223.66%       20.747s       10.373s             2  
-                             Torch-Compiled Region: 0/1         1.24%     371.494ms         5.86%        1.749s      58.293ms        5.885s        63.45%        9.271s     309.017ms            30  
-_Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2...         0.00%       0.000us         0.00%       0.000us       0.000us        3.532s        38.08%        3.532s       1.214ms          2910  
-                         Memcpy DtoD (Device -> Device)         0.00%       0.000us         0.00%       0.000us       0.000us        3.286s        35.43%        3.286s     242.600us         13547  
-                                            aten::copy_         0.41%     122.384ms        27.92%        8.334s     707.200us        3.134s        33.79%        3.134s     265.964us         11785  
-_Z39fmha_cutlassF_f16_aligned_64x64_rf_sm50N22PyTorc...         0.00%       0.000us         0.00%       0.000us       0.000us     996.075ms        10.74%     996.075ms       1.383ms           720  
-_Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2...         0.00%       0.000us         0.00%       0.000us       0.000us     774.567ms         8.35%     774.567ms     358.596us          2160  
-                                          decode_step_1         0.00%       0.000us         0.00%       0.000us       0.000us     760.759ms         8.20%     760.759ms     380.379ms             2  
-                                          decode_step_2         0.00%       0.000us         0.00%       0.000us       0.000us     327.958ms         3.54%     327.958ms     327.958ms             1  
-                                         decode_step_28         0.00%       0.000us         0.00%       0.000us       0.000us     319.822ms         3.45%     319.822ms     319.822ms             1  
-                                         decode_step_27         0.00%       0.000us         0.00%       0.000us       0.000us     318.457ms         3.43%     318.457ms     318.457ms             1  
-                                         decode_step_29         0.00%       0.000us         0.00%       0.000us       0.000us     318.307ms         3.43%     318.307ms     318.307ms             1  
-                                         decode_step_24         0.00%       0.000us         0.00%       0.000us       0.000us     317.770ms         3.43%     317.770ms     317.770ms             1  
-                                          decode_step_9         0.00%       0.000us         0.00%       0.000us       0.000us     316.834ms         3.42%     316.834ms     316.834ms             1  
-                                         decode_step_21         0.00%       0.000us         0.00%       0.000us       0.000us     316.830ms         3.42%     316.830ms     316.830ms             1  
-                                         decode_step_22         0.00%       0.000us         0.00%       0.000us       0.000us     316.710ms         3.41%     316.710ms     316.710ms             1  
-                                          decode_step_3         0.00%       0.000us         0.00%       0.000us       0.000us     316.709ms         3.41%     316.709ms     316.709ms             1  
-                                         decode_step_13         0.00%       0.000us         0.00%       0.000us       0.000us     316.462ms         3.41%     316.462ms     316.462ms             1  
-                                         decode_step_20         0.00%       0.000us         0.00%       0.000us       0.000us     316.440ms         3.41%     316.440ms     316.440ms             1  
-                                          decode_step_5         0.00%       0.000us         0.00%       0.000us       0.000us     316.283ms         3.41%     316.283ms     316.283ms             1  
-                                         decode_step_26         0.00%       0.000us         0.00%       0.000us       0.000us     316.234ms         3.41%     316.234ms     316.234ms             1  
-                                          decode_step_4         0.00%       0.000us         0.00%       0.000us       0.000us     316.217ms         3.41%     316.217ms     316.217ms             1  
-                                          decode_step_8         0.00%       0.000us         0.00%       0.000us       0.000us     316.204ms         3.41%     316.204ms     316.204ms             1  
-                                         decode_step_25         0.00%       0.000us         0.00%       0.000us       0.000us     316.169ms         3.41%     316.169ms     316.169ms             1  
-                                          decode_step_6         0.00%       0.000us         0.00%       0.000us       0.000us     316.093ms         3.41%     316.093ms     316.093ms             1  
-                                         decode_step_10         0.00%       0.000us         0.00%       0.000us       0.000us     316.066ms         3.41%     316.066ms     316.066ms             1  
-                                          decode_step_7         0.00%       0.000us         0.00%       0.000us       0.000us     316.064ms         3.41%     316.064ms     316.064ms             1  
-                                         decode_step_15         0.00%       0.000us         0.00%       0.000us       0.000us     316.039ms         3.41%     316.039ms     316.039ms             1  
-                                         decode_step_11         0.00%       0.000us         0.00%       0.000us       0.000us     316.005ms         3.41%     316.005ms     316.005ms             1  
-                                         decode_step_19         0.00%       0.000us         0.00%       0.000us       0.000us     315.956ms         3.41%     315.956ms     315.956ms             1  
-                                         decode_step_18         0.00%       0.000us         0.00%       0.000us       0.000us     315.922ms         3.41%     315.922ms     315.922ms             1  
-                                         decode_step_23         0.00%       0.000us         0.00%       0.000us       0.000us     315.845ms         3.40%     315.845ms     315.845ms             1  
-                                         decode_step_17         0.00%       0.000us         0.00%       0.000us       0.000us     315.802ms         3.40%     315.802ms     315.802ms             1  
-                                         decode_step_12         0.00%       0.000us         0.00%       0.000us       0.000us     315.778ms         3.40%     315.778ms     315.778ms             1  
-                                         decode_step_16         0.00%       0.000us         0.00%       0.000us       0.000us     315.519ms         3.40%     315.519ms     315.519ms             1  
-                                         decode_step_14         0.00%       0.000us         0.00%       0.000us       0.000us     315.384ms         3.40%     315.384ms     315.384ms             1  
-                                               aten::mm         0.24%      73.136ms         2.63%     785.602ms     736.272us     159.401ms         1.72%     478.202ms     448.175us          1067  
-_ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22g...         0.00%       0.000us         0.00%       0.000us       0.000us      81.714ms         0.88%      81.714ms      28.373us          2880  
-_ZN2at6native27unrolled_elementwise_kernelIZZZNS0_23...         0.00%       0.000us         0.00%       0.000us       0.000us      68.412ms         0.74%      68.412ms      45.608us          1500  
-_ZN2at6native13reduce_kernelILi512ELi1ENS0_8ReduceOp...         0.00%       0.000us         0.00%       0.000us       0.000us      55.568ms         0.60%      55.568ms      37.801us          1470  
+                                          decode_step_0         0.00%       0.000us         0.00%       0.000us       0.000us       32.507s      2124.69%       32.507s       32.507s             1  
+                                          decode_step_1         0.00%       0.000us         0.00%       0.000us       0.000us     765.571ms        50.04%     765.571ms     765.571ms             1  
+                         Memcpy DtoD (Device -> Device)         0.00%       0.000us         0.00%       0.000us       0.000us     762.987ms        49.87%     762.987ms      55.958us         13635  
+                                            aten::copy_         0.44%     153.596ms         3.47%        1.213s     104.356us     753.670ms        49.26%     753.670ms      64.826us         11626  
+                             Torch-Compiled Region: 0/1         0.28%      99.465ms         5.54%        1.935s      64.511ms     752.915ms        49.21%        1.708s      56.918ms            30  
+_Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2...         0.00%       0.000us         0.00%       0.000us       0.000us     479.807ms        31.36%     479.807ms      81.186us          5910  
+          CUDAGraphTreeManager.run_eager (dynamo_timed)         0.00%       0.000us         0.00%       0.000us       0.000us     323.391ms        21.14%     323.391ms     323.391ms             1  
+                                           Buffer Flush         0.06%      20.360ms         0.06%      20.361ms       5.090ms     101.350ms         6.62%     101.350ms      25.337ms             4  
+                                Activity Buffer Request         0.01%       3.823ms         0.01%       3.823ms     955.800us      76.792ms         5.02%      76.792ms      19.198ms             4  
+_Z40fmha_cutlassF_f16_aligned_32x128_rf_sm50N22PyTor...         0.00%       0.000us         0.00%       0.000us       0.000us      71.017ms         4.64%      71.017ms      84.544us           840  
+                                         decode_step_21         0.00%       0.000us         0.00%       0.000us       0.000us      68.827ms         4.50%      68.827ms      68.827ms             1  
+                                         decode_step_12         0.00%       0.000us         0.00%       0.000us       0.000us      64.043ms         4.19%      64.043ms      64.043ms             1  
+                                         decode_step_23         0.00%       0.000us         0.00%       0.000us       0.000us      62.030ms         4.05%      62.030ms      62.030ms             1  
+                                         decode_step_13         0.00%       0.000us         0.00%       0.000us       0.000us      61.987ms         4.05%      61.987ms      61.987ms             1  
+                                          decode_step_7         0.00%       0.000us         0.00%       0.000us       0.000us      61.640ms         4.03%      61.640ms      61.640ms             1  
+                                          decode_step_3         0.00%       0.000us         0.00%       0.000us       0.000us      60.639ms         3.96%      60.639ms      60.639ms             1  
+                                         decode_step_10         0.00%       0.000us         0.00%       0.000us       0.000us      60.489ms         3.95%      60.489ms      60.489ms             1  
+                                         decode_step_24         0.00%       0.000us         0.00%       0.000us       0.000us      59.990ms         3.92%      59.990ms      59.990ms             1  
+                                         decode_step_20         0.00%       0.000us         0.00%       0.000us       0.000us      59.776ms         3.91%      59.776ms      59.776ms             1  
+                                         decode_step_22         0.00%       0.000us         0.00%       0.000us       0.000us      59.732ms         3.90%      59.732ms      59.732ms             1  
+                                         decode_step_16         0.00%       0.000us         0.00%       0.000us       0.000us      59.572ms         3.89%      59.572ms      59.572ms             1  
+                                         decode_step_27         0.00%       0.000us         0.00%       0.000us       0.000us      59.371ms         3.88%      59.371ms      59.371ms             1  
+                                          decode_step_9         0.00%       0.000us         0.00%       0.000us       0.000us      59.332ms         3.88%      59.332ms      59.332ms             1  
+                                         decode_step_25         0.00%       0.000us         0.00%       0.000us       0.000us      59.126ms         3.86%      59.126ms      59.126ms             1  
+                                         decode_step_28         0.00%       0.000us         0.00%       0.000us       0.000us      59.114ms         3.86%      59.114ms      59.114ms             1  
+                                         decode_step_11         0.00%       0.000us         0.00%       0.000us       0.000us      58.999ms         3.86%      58.999ms      58.999ms             1  
+                                         decode_step_17         0.00%       0.000us         0.00%       0.000us       0.000us      58.989ms         3.86%      58.989ms      58.989ms             1  
+                                         decode_step_18         0.00%       0.000us         0.00%       0.000us       0.000us      58.640ms         3.83%      58.640ms      58.640ms             1  
+                                          decode_step_2         0.00%       0.000us         0.00%       0.000us       0.000us      58.472ms         3.82%      58.472ms      58.472ms             1  
+                                          decode_step_6         0.00%       0.000us         0.00%       0.000us       0.000us      58.215ms         3.81%      58.215ms      58.215ms             1  
+                                         decode_step_26         0.00%       0.000us         0.00%       0.000us       0.000us      57.611ms         3.77%      57.611ms      57.611ms             1  
+                                          decode_step_5         0.00%       0.000us         0.00%       0.000us       0.000us      57.564ms         3.76%      57.564ms      57.564ms             1  
+                                         decode_step_15         0.00%       0.000us         0.00%       0.000us       0.000us      57.330ms         3.75%      57.330ms      57.330ms             1  
+                                         decode_step_14         0.00%       0.000us         0.00%       0.000us       0.000us      56.835ms         3.71%      56.835ms      56.835ms             1  
+                                          decode_step_4         0.00%       0.000us         0.00%       0.000us       0.000us      56.805ms         3.71%      56.805ms      56.805ms             1  
+                                          decode_step_8         0.00%       0.000us         0.00%       0.000us       0.000us      56.371ms         3.68%      56.371ms      56.371ms             1  
+                                         decode_step_29         0.00%       0.000us         0.00%       0.000us       0.000us      56.347ms         3.68%      56.347ms      56.347ms             1  
+                                         decode_step_19         0.00%       0.000us         0.00%       0.000us       0.000us      55.738ms         3.64%      55.738ms      55.738ms             1  
+_ZN2at6native27unrolled_elementwise_kernelIZZZNS0_23...         0.00%       0.000us         0.00%       0.000us       0.000us      51.247ms         3.35%      51.247ms      14.984us          3420  
+_ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22g...         0.00%       0.000us         0.00%       0.000us       0.000us      37.584ms         2.46%      37.584ms      22.372us          1680  
 -------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
-Self CPU time total: 29.856s
-Self CUDA time total: 9.276s
+Self CPU time total: 34.937s
+Self CUDA time total: 1.530s

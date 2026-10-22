@@ -1,24 +1,26 @@
 """
-stream_load.py -- 低内存模型加载（本机办公环境专用）
+stream_load.py -- 低提交内存环境下的顺序流式模型加载
 
-背景：本机（办公笔记本，16GB RAM）日常被 Chrome/飞书/微信等吃满提交内存，
-Windows 下 transformers from_pretrained 会先对 model.safetensors 做整体
+适用场景：在提交内存（committed memory）紧张的 Windows 主机上，
+transformers 的 from_pretrained 会先对 model.safetensors 做整体
 view-mapping（metadata 探测），在提交内存不足时抛
-OSError "页面文件太小 (os error 1455)"，等待重试也无法稳定通过。
+OSError "页面文件太小 (os error 1455)"，且重试通常无法稳定通过。
 
-方案：完全绕开 safetensors 的 mmap——纯文件顺序读，逐个 tensor 直接上
-GPU，配合 accelerate.init_empty_weights 的 meta 模型骨架：
-  - CPU 侧峰值 = 单个最大 tensor（0.5B 模型 ~296MiB word embedding）；
-  - GPU 侧 = 权重本体（~1.2GiB）；
+方案：完全绕开 safetensors 的 mmap——纯文件顺序读，逐个 tensor 经固定
+大小的 CPU 跳板直接上 GPU，配合 accelerate.init_empty_weights 的 meta
+模型骨架：
+  - CPU 侧峰值 = 单个最大 tensor（Qwen-0.6B 的 embed_tokens 约
+    151936 × 1024 × 2B ≈ 300 MiB）；
+  - GPU 侧 = 权重本体（fp16 下约 1.2 GiB）；
   - RoPE inv_freq 等非持久 buffer 在权重赋值后按构造公式重算。
 
-与 from_pretrained 的区别：不做权重复检/tie 推断，只用于**性能测量**
-（本 profiling 实验只关心时序，不关心生成文本内容；token 输入为固定
-种子的随机 id，与 Experiment 2 口径一致）。
+与 from_pretrained 的区别：不做权重复检 / tie 推断，仅用于**性能测量**
+（本 profiling 只关心时序，输入为固定种子的随机 token id，与 throughput
+benchmark 口径一致）。在提交内存充足时仍建议优先使用标准 from_pretrained。
 
 用法：
     from stream_load import load_hf_model
-    model = load_hf_model("E:/model/Qwen1.5-0.5B", "cuda")
+    model = load_hf_model("F:/model/Qwen-0.6B", "cuda")
 """
 import json
 import os

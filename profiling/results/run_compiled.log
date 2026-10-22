@@ -1,0 +1,47 @@
+[compile] backend=cudagraphs (SM6.1)
+--- compiled_decode ---
+    wall_ms: 34946.822599999905
+    wall_per_step_ms: 1164.8940866666635
+    gpu_busy_ratio: 0.043779892460206395
+    kernel_time_sum_ms: 766.937169
+    num_kernels: 50523
+    kernels_per_step: 1684.1
+    avg_kernel_us: 15.179960988064842
+    num_memcpy: 13666
+    num_memset: 30
+    memcpy_mb: 34006.63660430908
+    unique_kernel_names: 35
+    steady: {'steady_tpot_ms': 59.2289875, 'steady_busy': 0.8702429109435843, 'steady_kernels_per_step': 2148.0, 'steady_kernel_ms_per_step': 51.4708935}
+    top kernels (name, count, total_us):
+          479.8 ms x5910   _Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2ELi4ELb0ELb0E18cublasGemvParamsExIi30cublasGemvTensorStrid
+           71.0 ms x840    _Z40fmha_cutlassF_f16_aligned_32x128_rf_sm50N22PyTorchMemEffAttention15AttentionKernelIN7cutlass6half_tENS1_4a
+           51.2 ms x3420   _ZN2at6native27unrolled_elementwise_kernelIZZZNS0_23direct_copy_kernel_cudaERNS_18TensorIteratorBaseEENKUlvE1_
+           37.6 ms x1680   _ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22gpu_kernel_impl_nocastIZZZNS0_23direct_copy_kernel_cudaERNS
+           19.7 ms x3390   _ZN2at6native13reduce_kernelILi512ELi1ENS0_8ReduceOpIfNS0_7MeanOpsIffffEEjfLi4ELi4EEEEEvT1_
+           19.5 ms x5040   _ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22gpu_kernel_impl_nocastINS0_13BinaryFunctorIN3c104HalfES5_S5
+           13.1 ms x3390   _ZN2at6native29vectorized_elementwise_kernelILi4EZZZNS0_17rsqrt_kernel_cudaERNS_18TensorIteratorBaseEENKUlvE0_
+            9.9 ms x3390   _ZN2at6native18elementwise_kernelILi128ELi2EZNS0_22gpu_kernel_impl_nocastINS0_13BinaryFunctorIfffNS0_15binary_
+            9.7 ms x3390   _ZN2at6native29vectorized_elementwise_kernelILi4ENS0_21CUDAFunctorOnSelf_addIfEESt5arrayIPcLy2EEEEviT0_T1_
+            8.7 ms x1680   _ZN2at6native24index_elementwise_kernelILi128ELi4EZNS0_22index_copy_kernel_implINS0_10OpaqueTypeILi2EEEEEvRNS_
+            8.1 ms x1680   _ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22gpu_kernel_impl_nocastIZZZNS0_15neg_kernel_cudaERNS_18Tenso
+            6.8 ms x1680   _ZN2at6native40_GLOBAL__N__0b46c3ea_8_Shape_cu_85d9f36c19CatArrayBatchedCopyINS1_10OpaqueTypeILj2EEEjLi4ELi64E
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                                   Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg    # of Calls  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                          decode_step_0         0.00%       0.000us         0.00%       0.000us       0.000us       32.507s      2124.69%       32.507s       32.507s             1  
+                                          decode_step_1         0.00%       0.000us         0.00%       0.000us       0.000us     765.571ms        50.04%     765.571ms     765.571ms             1  
+                         Memcpy DtoD (Device -> Device)         0.00%       0.000us         0.00%       0.000us       0.000us     762.987ms        49.87%     762.987ms      55.958us         13635  
+                                            aten::copy_         0.44%     153.596ms         3.47%        1.213s     104.356us     753.670ms        49.26%     753.670ms      64.826us         11626  
+                             Torch-Compiled Region: 0/1         0.28%      99.465ms         5.54%        1.935s      64.511ms     752.915ms        49.21%        1.708s      56.918ms            30  
+_Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2...         0.00%       0.000us         0.00%       0.000us       0.000us     479.807ms        31.36%     479.807ms      81.186us          5910  
+          CUDAGraphTreeManager.run_eager (dynamo_timed)         0.00%       0.000us         0.00%       0.000us       0.000us     323.391ms        21.14%     323.391ms     323.391ms             1  
+                                           Buffer Flush         0.06%      20.360ms         0.06%      20.361ms       5.090ms     101.350ms         6.62%     101.350ms      25.337ms             4  
+                                Activity Buffer Request         0.01%       3.823ms         0.01%       3.823ms     955.800us      76.792ms         5.02%      76.792ms      19.198ms             4  
+_Z40fmha_cutlassF_f16_aligned_32x128_rf_sm50N22PyTor...         0.00%       0.000us         0.00%       0.000us       0.000us      71.017ms         4.64%      71.017ms      84.544us           840  
+                                         decode_step_21         0.00%       0.000us         0.00%       0.000us       0.000us      68.827ms         4.50%      68.827ms      68.827ms             1  
+                                         decode_step_12         0.00%       0.000us         0.00%       0.000us       0.000us      64.043ms         4.19%      64.043ms      64.043ms             1  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+Self CPU time total: 34.937s
+Self CUDA time total: 1.530s
+
+metrics -> F:\AI-infra\profiling\results\prof_metrics.json

@@ -1,0 +1,91 @@
+--- eager_prefill ---
+    wall_ms: 264.32610000028944
+    wall_per_step_ms: None
+    gpu_busy_ratio: 0.3729862376756809
+    kernel_time_sum_ms: 98.583494
+    num_kernels: 1744
+    kernels_per_step: None
+    avg_kernel_us: 56.527232798165144
+    num_memcpy: 4
+    num_memset: 0
+    memcpy_mb: 0.11669921875
+    unique_kernel_names: 39
+    steady: {'steady_tpot_ms': None, 'steady_busy': None, 'steady_kernels_per_step': None, 'steady_kernel_ms_per_step': None}
+    top kernels (name, count, total_us):
+           69.9 ms x196    hgemm_32x32x32_NT_vec
+            6.9 ms x28     _Z40fmha_cutlassF_f16_aligned_32x128_rf_sm50N22PyTorchMemEffAttention15AttentionKernelIN7cutlass6half_tENS1_4a
+            3.6 ms x1      _Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2ELi4ELb0ELb0E18cublasGemvParamsExIi30cublasGemvTensorStrid
+            3.1 ms x225    _ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22gpu_kernel_impl_nocastINS0_13BinaryFunctorIN3c104HalfES5_S5
+            2.4 ms x114    _ZN2at6native27unrolled_elementwise_kernelIZZZNS0_23direct_copy_kernel_cudaERNS_18TensorIteratorBaseEENKUlvE1_
+            1.8 ms x112    _ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22gpu_kernel_impl_nocastIZZZNS0_23direct_copy_kernel_cudaERNS
+            1.7 ms x56     _ZN2at6native40_GLOBAL__N__0b46c3ea_8_Shape_cu_85d9f36c19CatArrayBatchedCopyINS1_10OpaqueTypeILj2EEEjLi4ELi64E
+            1.5 ms x113    _ZN2at6native18elementwise_kernelILi128ELi2EZNS0_22gpu_kernel_impl_nocastINS0_13BinaryFunctorIfffNS0_15binary_
+            1.3 ms x113    _ZN2at6native13reduce_kernelILi512ELi1ENS0_8ReduceOpIfNS0_7MeanOpsIffffEEjfLi4ELi4EEEEEvT1_
+            1.0 ms x113    _ZN2at6native29vectorized_elementwise_kernelILi4EZNS0_50_GLOBAL__N__f7789698_12_PowKernel_cu_3f06cd35_166429po
+            1.0 ms x56     _ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22gpu_kernel_impl_nocastINS0_15CUDAFunctor_addIN3c104HalfEEEE
+            0.9 ms x56     _ZN2at6native24index_elementwise_kernelILi128ELi4EZNS0_22index_copy_kernel_implINS0_10OpaqueTypeILi2EEEEEvRNS_
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                                   Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg    # of Calls  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                               aten::mm         8.60%      16.295ms        13.22%      25.050ms     127.158us      73.543ms        74.59%      73.543ms     373.315us           197  
+                                  hgemm_32x32x32_NT_vec         0.00%       0.000us         0.00%       0.000us       0.000us      69.929ms        70.93%      69.929ms     356.780us           196  
+                     aten::_efficient_attention_forward         0.70%       1.331ms         1.79%       3.389ms     121.018us       6.918ms         7.02%       6.918ms     247.079us            28  
+_Z40fmha_cutlassF_f16_aligned_32x128_rf_sm50N22PyTor...         0.00%       0.000us         0.00%       0.000us       0.000us       6.918ms         7.02%       6.918ms     247.079us            28  
+                                              aten::mul         6.52%      12.361ms        13.11%      24.856ms      67.360us       5.209ms         5.28%       5.209ms      14.117us           369  
+                                            aten::copy_         4.38%       8.309ms        12.01%      22.757ms      65.770us       4.983ms         5.05%       4.983ms      14.400us           346  
+_Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2...         0.00%       0.000us         0.00%       0.000us       0.000us       3.614ms         3.67%       3.614ms       3.614ms             1  
+_ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22g...         0.00%       0.000us         0.00%       0.000us       0.000us       3.066ms         3.11%       3.066ms      13.626us           225  
+_ZN2at6native27unrolled_elementwise_kernelIZZZNS0_23...         0.00%       0.000us         0.00%       0.000us       0.000us       2.355ms         2.39%       2.355ms      20.656us           114  
+_ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22g...         0.00%       0.000us         0.00%       0.000us       0.000us       1.802ms         1.83%       1.802ms      16.091us           112  
+                                              aten::cat         1.40%       2.658ms         2.55%       4.830ms      84.733us       1.748ms         1.77%       1.748ms      30.666us            57  
+_ZN2at6native40_GLOBAL__N__0b46c3ea_8_Shape_cu_85d9f...         0.00%       0.000us         0.00%       0.000us       0.000us       1.743ms         1.77%       1.743ms      31.125us            56  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+Self CPU time total: 189.534ms
+Self CUDA time total: 98.590ms
+
+--- eager_decode ---
+    wall_ms: 5377.305699999852
+    wall_per_step_ms: 179.2435233333284
+    gpu_busy_ratio: 0.13965717819093898
+    kernel_time_sum_ms: 749.614139
+    num_kernels: 50611
+    kernels_per_step: 1687.0333333333333
+    avg_kernel_us: 14.811288830491394
+    num_memcpy: 961
+    num_memset: 30
+    memcpy_mb: 0.28061676025390625
+    unique_kernel_names: 38
+    steady: {'steady_tpot_ms': 175.313684, 'steady_busy': 0.14477278200436755, 'steady_kernels_per_step': 1717.0, 'steady_kernel_ms_per_step': 24.816056500000002}
+    top kernels (name, count, total_us):
+          474.5 ms x5910   _Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2ELi4ELb0ELb0E18cublasGemvParamsExIi30cublasGemvTensorStrid
+           70.4 ms x840    _Z40fmha_cutlassF_f16_aligned_32x128_rf_sm50N22PyTorchMemEffAttention15AttentionKernelIN7cutlass6half_tENS1_4a
+           49.8 ms x3420   _ZN2at6native27unrolled_elementwise_kernelIZZZNS0_23direct_copy_kernel_cudaERNS_18TensorIteratorBaseEENKUlvE1_
+           38.8 ms x1680   _ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22gpu_kernel_impl_nocastIZZZNS0_23direct_copy_kernel_cudaERNS
+           18.8 ms x3390   _ZN2at6native13reduce_kernelILi512ELi1ENS0_8ReduceOpIfNS0_7MeanOpsIffffEEjfLi4ELi4EEEEEvT1_
+           17.4 ms x5040   _ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22gpu_kernel_impl_nocastINS0_13BinaryFunctorIN3c104HalfES5_S5
+           11.5 ms x3390   _ZN2at6native29vectorized_elementwise_kernelILi4EZZZNS0_17rsqrt_kernel_cudaERNS_18TensorIteratorBaseEENKUlvE0_
+            9.2 ms x3390   _ZN2at6native29vectorized_elementwise_kernelILi4ENS0_21CUDAFunctorOnSelf_addIfEESt5arrayIPcLy2EEEEviT0_T1_
+            8.9 ms x3390   _ZN2at6native18elementwise_kernelILi128ELi2EZNS0_22gpu_kernel_impl_nocastINS0_13BinaryFunctorIfffNS0_15binary_
+            8.1 ms x1680   _ZN2at6native24index_elementwise_kernelILi128ELi4EZNS0_22index_copy_kernel_implINS0_10OpaqueTypeILi2EEEEEvRNS_
+            6.3 ms x3360   _ZN2at6native29vectorized_elementwise_kernelILi8ENS0_15CUDAFunctor_addIN3c104HalfEEESt5arrayIPcLy3EEEEviT0_T1_
+            6.2 ms x1680   _ZN2at6native40_GLOBAL__N__0b46c3ea_8_Shape_cu_85d9f36c19CatArrayBatchedCopyINS1_10OpaqueTypeILj2EEEjLi4ELi64E
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                                   Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg    # of Calls  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                               aten::mm         8.18%     439.412ms        11.75%     631.288ms     106.817us     474.512ms        63.19%     474.512ms      80.290us          5910  
+_Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2...         0.00%       0.000us         0.00%       0.000us       0.000us     474.512ms        63.19%     474.512ms      80.290us          5910  
+                                          decode_step_0         0.00%       0.000us         0.00%       0.000us       0.000us     278.736ms        37.12%     278.736ms     278.736ms             1  
+                                         decode_step_20         0.00%       0.000us         0.00%       0.000us       0.000us     203.688ms        27.12%     203.688ms     203.688ms             1  
+                                         decode_step_24         0.00%       0.000us         0.00%       0.000us       0.000us     202.699ms        26.99%     202.699ms     202.699ms             1  
+                                         decode_step_23         0.00%       0.000us         0.00%       0.000us       0.000us     193.527ms        25.77%     193.527ms     193.527ms             1  
+                                         decode_step_11         0.00%       0.000us         0.00%       0.000us       0.000us     191.051ms        25.44%     191.051ms     191.051ms             1  
+                                          decode_step_4         0.00%       0.000us         0.00%       0.000us       0.000us     190.137ms        25.32%     190.137ms     190.137ms             1  
+                                          decode_step_5         0.00%       0.000us         0.00%       0.000us       0.000us     188.695ms        25.13%     188.695ms     188.695ms             1  
+                                         decode_step_10         0.00%       0.000us         0.00%       0.000us       0.000us     185.906ms        24.76%     185.906ms     185.906ms             1  
+                                         decode_step_19         0.00%       0.000us         0.00%       0.000us       0.000us     185.456ms        24.70%     185.456ms     185.456ms             1  
+                                         decode_step_14         0.00%       0.000us         0.00%       0.000us       0.000us     185.101ms        24.65%     185.101ms     185.101ms             1  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+Self CPU time total: 5.373s
+Self CUDA time total: 750.979ms
+
+metrics -> F:\AI-infra\profiling\results\prof_metrics.json

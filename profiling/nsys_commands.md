@@ -36,7 +36,7 @@ nsys profile --trace=cuda,nvtx,osrt --stats=true \
 ```
 
 要点：
-- `--repeats 1` + 单一 workload/并发：负载与 Experiment 2 口径一致，
+- `--repeats 1` + 单一 workload/并发：负载与 inference 吞吐基准口径一致，
   且 warmup 已把编译/图捕获排除在指标外；但 **进程启动后的编译期也在
   时间轴上**，在 GUI 里看测量段即可（bench 会打印每档结果，对照时间点）。
 - `--trace=cuda,nvtx,osrt`：cuda 给出 kernel/memcpy/API 轨道；osrt 给出
@@ -45,7 +45,7 @@ nsys profile --trace=cuda,nvtx,osrt --stats=true \
   --report cuda_gpu_time_util nsys_eager.nsys-rep`（`gpu-metrics` 需
   云端物理卡，vGPU/部分云实例不支持时间线利用率采样）。
 
-## 2. 看什么（层C 的三个问题）
+## 2. 看什么（decode 路径的三个关键信号）
 
 | 问题 | GUI 操作 | eager 预期 | cudagraphs 预期 |
 |---|---|---|---|
@@ -63,13 +63,13 @@ scp <user>@<host>:~/AI-infra/profiling/results/nsys_*.nsys-rep profiling/results
 Windows 安装 [Nsight Systems GUI](https://developer.nvidia.com/nsight-systems)
 直接打开 `.nsys-rep`。
 
-## 4. 附：层B (ncu) 本机实测不可行，到云端补采
+## 4. 附：Nsight Compute (ncu) 本机实测不可行，到云端补采
 
-> 本机实测结论（2026-10-22，办公本 MX330/Pascal GP108）：
+> 本机实测结论（2026-10-22，测试机 GTX 1050 Ti Max-Q / Pascal SM6.1）：
 > 1. 普通用户跑 ncu 报 `ERR_NVGPUCTRPERM`（需管理员/UAC 提权，已验证可解决）；
 > 2. 提权后 ncu 2025.1.0 报 `Profiling is not supported on device 0`，
 >    `--list-chips` 支持列表从 Turing (tu102) 起 —— **该版本已放弃 Pascal**，
->    本机任何姿势都采不了，层B 必须去云端。
+>    Pascal 架构消费级 GPU 任何姿势都采不了，层B 必须去云端数据中心卡。
 
 云端用数据中心卡（A100/L20）可直接 kernel-replay，无需 application 模式：
 

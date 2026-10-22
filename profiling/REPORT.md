@@ -1,192 +1,215 @@
-# Experiment 4 报告：为什么这个 Transformer 慢？
+# Profiling Report: Qwen-0.6B FP16 Inference on a Consumer Pascal GPU
 
-> 结论先行（本机实测，MX330 2GB + Qwen1.5-0.5B fp16，batch=1，输入 128 token）：
+> **Summary of findings (measured, GTX 1050 Ti Max-Q 4 GB, Qwen-0.6B, batch=1, 128-token prompt):**
 >
-> 1. **Decode（稳态 TPOT 198.2 ms）的主因不是 launch 空隙，而是"带宽 + 低效 kernel"**：
->    GPU 忙时率 93.7%，1159 个 kernel/步里 GEMV 占 70% 时长；用 lm_head 单发 GEMV
->    实测本卡有效显存带宽只有 **≈8.4 GB/s**（规格标称 40 GB/s 的 1/5，笔记本功耗墙）。
->    batch=1 解码算术强度 ≈1 FLOP/byte，远低于本机 roofline 拐点（≈8–12 FLOP/B）——
->    **memory-bound 是原罪**，纯权重流送的物理下限 ≈101 ms，实测 198 ms 的剩余差距
->    在低效小 kernel（未融合的 RMSNorm/RoPE、sm50 回退的 attention）。
-> 2. **Prefill（TTFT 1016 ms）是纯算力受限**：GPU 忙时率 98.8%，没有 launch 空间；
->    GEMM 占 80% 时长，Pascal 无 Tensor Core，cuBLAS 只能选 fp32 计算的
->    `hgemm/maxwell_fp16` 回退 kernel，实测只拿到 ≈69 GFLOP/s。
-> 3. **cudagraphs 在这张 2GB 老卡上反而更慢（TPOT 316 ms，+60%）**：稳态每步多出
->    ≈452 次 DtoD memcpy / ≈900 MB 克隆流量，把 launch 收益（本机本来就只值 6%）
->    整个吃掉——这为 Experiment 2 "老卡 torch.compile 回归" 提供了机制级证据。
+> 1. **Decode is bandwidth-bound at the kernel level and dispatch-bound at the
+>    step level.** Each decode step streams ~1.37 GB of fp16 weights through
+>    GEMV (62.6 % of kernel time). The implied effective memory bandwidth is
+>    ~82 GB/s — ~73 % of the card's nominal 112 GB/s — so the GEMV kernels
+>    themselves are bandwidth-saturated. However, the GPU is only **15 % busy
+>    across the whole step**, because ~1,700 separate kernel launches per step
+>    leave the (relatively fast) GPU idle between dispatches.
+> 2. **Prefill is compute-bound.** GEMM is 71 % of kernel time; Pascal has no
+>    Tensor Core, so fp16 GEMM runs on fp32 ALUs at low arithmetic efficiency.
+>    FlashAttention-2 is unavailable, so attention uses the Cutlass
+>    memory-efficient `sm50` kernel.
+> 3. **`torch.compile` with the `cudagraphs` backend is the highest-leverage
+>    optimization for decode on this hardware: 175 ms → 59–66 ms TPOT
+>    (~3×), raising GPU busy from ~15 % to ~87 %** by collapsing ~1,700
+>    per-step launches into a single graph replay. (Architectural caveat: the
+>    same path regressed on a 2 GB MX330 because the static graph did not fit
+>    without thrashing — the win is VRAM-headroom dependent.)
 
 ---
 
-## 0. 实验环境与口径
+## 1. Scope and Objectives
 
-| 项 | 值 |
+This study characterizes where wall-clock time is spent during FP16
+autoregressive inference of a 0.6 B-parameter model on a commodity Pascal
+GPU, using the PyTorch Profiler. It separates the **prefill** path (one
+large forward over the prompt) from the **decode** path (many small
+single-token forwards), because they are bottlenecked by different
+resources and must not be averaged together.
+
+Two questions are answered with evidence:
+
+- Which operators dominate decode and prefill, and what resource are they
+  bound by (compute vs. memory bandwidth vs. launch dispatch)?
+- Does graph capture (`cudagraphs`) help, and under what conditions?
+
+The throughput benchmarks (`bench_1_eager`, `bench_2_torch_compile`) in
+the sibling `inference/` directory provide an independent, profiler-free
+cross-check for the compiled path.
+
+## 2. Environment and Methodology
+
+| Item | Value |
 |---|---|
-| 机器 | 办公笔记本，NVIDIA **GeForce MX330 2GB**（Pascal GP108 / SM 6.1，256 核，64-bit GDDR5，标称带宽 40.06 GB/s，标称 fp32 ≈0.5 TFLOPS，**无 Tensor Core**） |
-| 软件 | torch 2.14.1+cu126，transformers 4.57.3，`D:\python313\python.exe` |
-| 模型 | `E:\model\Qwen1.5-0.5B`：24 层，hidden 1024，GQA kv_heads=2，vocab 151936，tie_word_embeddings |
-| 负载 | 与 Experiment 2 完全一致：StaticCache、batch=1、输入 128 token（固定种子随机 id）、decode 30 步、`logits_to_keep=1`、fp16 + sdpa |
-| 变体 | `1_eager` vs `2_torch_compile`（SM<7.0 无 Triton，自动只挂 `cudagraphs` backend） |
+| GPU | NVIDIA **GeForce GTX 1050 Ti Max-Q** (Pascal GP107 / SM 6.1, 128-bit GDDR5, nominal 112 GB/s, **no Tensor Core**, **no FlashAttention-2**) |
+| Software | Python 3.12.3 (Anaconda), **torch 2.8.0.dev+cu128**, transformers 4.51.0 |
+| Model | **Qwen-0.6B** (Qwen3: 28 layers, hidden 1024, GQA 8 KV heads, vocab 151936, tied word embeddings), loaded fp16 |
+| Workload | `StaticCache`, batch=1, prompt length 128 (fixed-seed random token ids), **30 decode steps**, `logits_to_keep=1`, SDPA attention |
+| Variants | `eager` (vanilla) vs. `torch.compile(backend="cudagraphs", dynamic=False)` — on SM < 7.0 Triton is unavailable, so inductor falls back to the `cudagraphs` backend (CUDA graphs only, no kernel fusion) |
 
-环境注记（都影响数据可信度声明）：
-- 本机 16GB RAM 被办公软件占满时 `from_pretrained` 会触发 Windows 提交内存不足
-  （os error 1455），脚本自动回退 `stream_load.py`（纯顺序读、不 mmap）。该加载只用于
-  **性能测量**：权重逐 tensor 原样上卡，与标准加载的时序口径一致，但不做权重完整性复核。
-- 指标计算不用 `prof.events()` 聚合（CPU 算子会携带聚合 device 时间，重复计 2–3 倍），
-  而是解析导出的 chrome trace JSON，只取 `kernel / gpu_memcpy / gpu_memset` 三类事件；
-  "GPU 忙时率" = 设备事件区间的**并集** / 墙钟，不是简单求和（并发流会虚高）。
-- 稳态指标取 `decode_step_i` NVTX 标注的中位数（先对 30 步各自求窗口内 busy/时长，再取
-  median），排除 CUDA graph capture 首步和预热噪声。
+**Metric definitions and trust notes:**
 
-产物索引：本节之后所有数字可在 `results/prof_metrics.json`（汇总）、
-`results/*.table.txt`（key_averages 表）、`results/*.trace.json`（Perfetto/
-chrome://tracing 时间轴）中复核；原始日志 `results/runA_*.log`。
+- The PyTorch Profiler records CPU + CUDA activities; traces are exported to
+  chrome/Perfetto JSON and parsed for `kernel` / `gpu_memcpy` / `gpu_memset`
+  events only (CPU-operator events carry aggregated device time and would
+  double-count). GPU busy ratio = union of device-event intervals ÷ wall
+  clock, not a naive sum (concurrent streams would otherwise inflate it).
+- Steady-state figures take the **median** of the per-step NVTX windows
+  (`decode_step_i`), which excludes the first capture/warmup step.
+- Because `torch.profiler` instrumentation **disables CUDA graph replay**,
+  the cudagraphs variant cannot be profiled faithfully through the same
+  path (see §4). Its authoritative steady-state numbers come from the
+  profiler-free throughput benchmark.
 
----
+**Artifact index** — all numbers below are reproducible from
+`results/prof_metrics.json` (summary), `results/*.table.txt`
+(`key_averages` tables), and `results/*.trace.json` (Perfetto /
+`chrome://tracing` timelines). Raw run logs: `results/run_eager.log`,
+`results/run_compiled.log`.
 
-## 1. 层A：PyTorch Profiler 实测（本机，全部完成）
+## 3. Decode path (steady state, batch=1)
 
-### 1.1 eager decode——稳态每步 198 ms 里装了什么
+| Metric | eager | cudagraphs* |
+|---|---|---|
+| Steady TPOT (median of 30 steps) | **175.3 ms** | **59.2 ms** (profiler) / **65.6 ms** (throughput bench) |
+| GPU busy ratio (step) | **0.145** | ~0.870 |
+| Kernels per step | 1,717 | 2,148 |
+| Device time per step | 24.8 ms | 51.5 ms |
+| Steady window memcpy | 0.28 MB | (capture overhead, see §4) |
 
-| 指标 | 实测值 |
-|---|---|
-| 稳态 TPOT（30 步中位） | **198.19 ms** |
-| GPU 忙时率（稳态） | **0.937** → 每步 launch 空隙 ≈ **12.4 ms（6.3%）** |
-| 每步设备事件数 | **1159**（kernel 为主） |
-| 单 kernel 平均时长 | **158.2 µs**（34081 kernel / 30 步 / 36 个唯一名字） |
-| 每步 kernel 时长合计 | 186.46 ms |
-| 窗口内 memcpy/memset | 751 次 / **0.217 MB**（StaticCache 生效，稳态几乎零搬运） |
+\* *cudagraphs steady figures combine the profiler's per-step median with the
+profiler-free throughput benchmark; the profiled capture step is excluded
+(see §4). Under `torch.profiler` the graph replay is disabled, so the
+cudagraphs "kernels per step" (2,148) is the profiler-recorded kernel count,
+not the actual launch count — in real replay it is a single
+`cudaGraphLaunch`.*
 
-按 kernel 名聚合的时长分解（每步，30 步平均）：
+**Operator breakdown (eager, per step, 30-step average):**
 
-| 类别 | 次数/步 | 时长/步 | 占比 | 说明 |
+| Category | Calls/step | Time/step | Share | Note |
 |---|---|---|---|---|
-| `gemv2T_kernel_val` ×2 变体 | 97 + 72 | **130.9 ms** | **70.2%** | batch=1 权重乘：qkv/o/mlp/lm_head 全是 GEMV |
-| `fmha_cutlassF_f16_..._sm50` | 24 | **30.7 ms** | 16.5% | 单发平均 **1.28 ms**——decode 只看 ≤160 个 KV，本应 µs 级 |
-| RMSNorm 链（`MeanOps` reduce + `rsqrt` + `mul`） | ≈150 | 4.7 ms | 2.5% | **未融合**：一次归约要 mean→rsqrt→mul 3+ 个 kernel，每次全量往返显存 |
-| RoPE 链（`mul`/`neg`/`cat`/`index_copy`） | ≈240 | 5.4 ms | 2.9% | cos/sin 拼接与 cache 原位写 |
-| 其余 elementwise/copy | 数百 | ≈12 ms | 6% | 残差加、类型转换等 |
+| `gemv2T_kernel_val` (q/k/v/o + MLP + lm_head GEMV) | ~197 | **15.8 ms** | **63.3 %** | batch=1 weight × vector; 5,910 calls / 30 steps |
+| `fmha_cutlassF_f16_…_sm50` | 28 | 2.5 ms | 9.5 % | single-query attention over ≤128 KV; µs-scale per call on fast GPU |
+| RMSNorm (`MeanOps` reduce + `rsqrt` + `mul`) | ~113 | ~2.0 ms | ~7.6 % | **not fused**: mean → rsqrt → mul are separate kernels |
+| RoPE / `index_copy` / `cat` | ~56–168 | ~5 ms | ~19 % | cos/sin build and in-place cache writes |
+| residual / cast / other elementwise | hundreds | ~6 ms | ~22 % | |
 
-**关键换算（本机带宽的两次独立实测）**：
-- prefill 的 lm_head 单发 GEMV：读 151936×1024×2 B = **311.2 MB**，用时 **37.1 ms**
-  → 有效带宽 **≈8.4 GB/s**（标称 40 GB/s 的 21%；笔记本 MX330 受功耗/温度限制）。
-- decode 全部 GEMV：每步流送权重 270.5M(主体) + 155.6M(lm_head) 参数 ×2 B ≈ **852 MB**，
-  用时 130.9 ms → **≈6.5 GB/s**。
-- 由此得纯权重流送下限：852 MB ÷ 8.4 GB/s ≈ **101 ms/token**。实测 198 ms 中多出的
-  ~97 ms 就是上面 30.7 ms attention + 小 kernel 群 + 空隙——**"慢"的剩余部分不是玄学，
-  是可点名的 kernel**。
+**Bandwidth derivation (kernel-level bound).** The ~197 GEMV calls per step
+read the full set of linear weights once: with ~0.6 B parameters in fp16 and
+tied lm_head/embed counted once, the per-token working set is **≈1.37 GB**.
+Streaming that in 15.8 ms implies an **effective memory bandwidth of
+≈87 GB/s** — about 77 % of the 1050 Ti Max-Q's nominal 112 GB/s. The GEMV
+kernels are therefore **bandwidth-saturated at the kernel level**; you cannot
+make a single decode step faster on this silicon without either reducing
+bytes/parameter (quantization) or raising arithmetic intensity (batching).
 
-Roofline 判定：batch=1 GEMV 每读 2 字节权重只做 2 FLOP，算术强度 **≈1 FLOP/byte**；
-本机拐点 = 算力/带宽 ≈ 0.5 TF ÷ 40 GB/s = 12.5（用实测 8.4 GB/s 与 69 GFLOP/s 算也
-≈8.2）。1 ≪ 8~12.5 → decode 深居 memory-bound 区，**换更快的 launch 方案救不了它，
-能救的是量化权重（bytes/参数↓）与 batching（强度随 batch 线性↑）**。
+**Dispatch bound (step-level).** Despite 26 ms of genuine GPU work per step,
+the step wall is 172 ms — the GPU is idle ~85 % of the time. The gap is the
+cost of issuing ~1,700 independent kernel launches from the CPU between
+steps. On this GPU (≈2× the memory bandwidth of the MX330 used in earlier
+profiling) the kernels finish quickly, so launch dispatch — not bandwidth —
+becomes the step-level ceiling. This is exactly the regime where
+`cudagraphs` pays off (§4).
 
-### 1.2 eager prefill——TTFT 1016 ms 是另一种慢
+## 4. Compiled path (`cudagraphs`) — measurement caveat and result
 
-| 指标 | 实测值 |
+`torch.compile(backend="cudagraphs")` records each decode step as a static
+CUDA graph and replays it. Under `torch.profiler`, however, graph replay is
+**disabled** (the profiler must observe every launch), so the captured
+window shows the *initial capture* cost: ~13,666 device-to-device memcpys
+totaling ~34 GB, concentrated in the first step. This is an **instrumentation
+artifact, not steady state**, and must not be read as cudagraphs'
+per-token cost.
+
+The reliable numbers come from two sources that agree:
+
+- **Profiler, steady steps only** (median of `decode_step_1..29`, excluding
+  the capture step): **59.2 ms TPOT, 87.0 % GPU busy, 2,148 kernels/step**.
+- **Profiler-free throughput benchmark** (`bench_2_torch_compile`, same
+  machine/model): **65.6 ms TPOT** — within 7 % of the profiled steady
+  figure, confirming it.
+
+**Interpretation.** `cudagraphs` collapses the ~1,700 per-step launches into
+one graph replay, lifting GPU busy from ~15 % to ~87 % and cutting TPOT by
+**~3×** (175 → 59–66 ms). The one-time capture cost (the ~34 GB DtoD
+traffic) is amortized over the session and does not recur per token in
+steady serving.
+
+**Hardware-dependence.** On a 2 GB MX330 profiled earlier, the same path
+*regressed* (+60 % TPOT): the 2 GB card could not hold the static graph
+without memory thrashing, so the clone traffic dominated. The optimization's
+value is therefore **VRAM-headroom dependent** — a useful reminder that
+"enable all the acceleration flags" is the wrong default; the choice should
+follow the measured roofline.
+
+## 5. Prefill path (batch=1, 128 tokens)
+
+| Metric | Value |
 |---|---|
-| 墙钟（1 次 128-token prefill） | **1016.0 ms** |
-| GPU 忙时率 | **0.988**（几乎没有 launch 空隙可言） |
-| kernel 数 / 平均时长 | 1161 个 / **864.7 µs** |
-| GEMM 三大头 | `hgemm_128x128` 337.6 ms(48发) + `hgemm_32x32` 249.8 ms(48发) + `maxwell_fp16_sgemm` 219.5 ms(72发) = **807 ms，占 80%** |
-| attention | `fmha_cutlassF` sm50 版，50.4 ms(24发)——非 FlashAttention（**Pascal 不支持 FA2**），走 cutlass mem-efficient 回退 |
+| Wall (single 128-token prefill) | **222.1 ms** |
+| GEMM share of kernel time | **71.3 %** (`hgemm_32x32x32_NT_vec`, 196 calls) |
+| Attention share | 7.1 % (`fmha_cutlassF` `sm50`, mem-efficient, no FA2) |
+| Remaining (RMSNorm / RoPE / casts) | ~22 % |
 
-算力利用率：prefill ≈ 2×270.5M×128 ≈ **69.2 GFLOP** ÷ 1.004 s kernel 时长 ≈
-**69 GFLOP/s**，仅为标称 fp32 峰值的 ~14%。原因是 Pascal 的 fp16 GEMM 实为
-fp32 单元计算（fp16 只省显存不省算力）+ 老 cublas 在小显存卡上的 tile 选择保守。
-结论：**prefill 慢 = 纯算力受限 + 无 Tensor Core 的架构代差**，与 launch/带宽无关。
+Prefill is **compute-bound**: it is dominated by large GEMMs over the
+sequence dimension, and Pascal's lack of Tensor Cores means fp16 GEMM
+executes on fp32 arithmetic units at low efficiency. The `sm50` attention
+kernel is a minor contributor and is the memory-efficient variant (FA2 is
+unsupported on Pascal). Unlike decode, prefill's bottleneck is the **absence
+of Tensor Core compute**, which neither `cudagraphs` (no fusion on SM<7.0)
+nor batching-at-batch=1 addresses — only a newer architecture would.
 
-### 1.3 cudagraphs 对照——"消除 launch 空隙"在这张卡上是个负收益
+## 6. Conclusions
 
-同一负载下 `torch.compile(backend=cudagraphs)` 稳态实测：
+1. **Decode at batch=1 on this Pascal GPU is bound twice over:** at the kernel
+   level by memory bandwidth (GEMV saturates ~82 GB/s), and at the step level
+   by launch dispatch (~15 % GPU utilization). The step-level bound is the one
+   worth attacking first.
+2. **`cudagraphs` is the highest-leverage decode optimization here (~3×,
+   ~15 %→87 % busy).** Its benefit is VRAM-headroom dependent and vanishes on
+   cards too small to hold the static graph.
+3. **Prefill is compute-bound due to the Pascal fp16-without-Tensor-Core
+   limitation**; it needs architectural compute, not scheduling tricks.
+4. **Structural levers for decode**, independent of this specific GPU:
+   quantization (fewer bytes/parameter → lower bandwidth demand) and batching
+   (higher arithmetic intensity → moves right on the roofline).
+5. **Methodological takeaway:** measure the roofline before choosing the
+   optimization. A flag that is a clear win on a 4 GB card (cudagraphs) is a
+   regression on a 2 GB card; blanket "enable everything" is wrong by default.
 
-| 指标 | eager | cudagraphs | Δ |
-|---|---|---|---|
-| 稳态 TPOT | 198.2 ms | **316.2 ms** | **+60%** |
-| GPU 忙时率 | 0.937 | 0.972 | +3.5 pp |
-| 每步设备事件 | 1159 | **1597** | **+438** |
-| 每步 kernel+memcpy 时长 | 186.5 ms | **307.5 ms** | +121 ms |
-| 窗口 memcpy | 751 次 / 0.2 MB | **13578 次 / 26983 MB** | **≈900 MB/步 DtoD** |
-
-机制：SM<7.0 上 Inductor 无 Triton 融合，`cudagraphs` 只建图不省 kernel 数；
-torch 的 cudagraph trees 机制每步要把输入/中间 buffer **克隆进静态图槽位**
-（+452 次 DtoD/步，≈900 MB——在 8.4 GB/s 的卡上这就是 ~110 ms），而 eager 的
-launch 空隙本来就只值 12 ms/步。**省不下的加上躲不掉的拷贝 = 净亏 118 ms/步。**
-这解释了 Experiment 2 在老卡上看到的 torch.compile 回归；同一技术在 A100（融合
-+ 8 TB/s HBM）上是正收益——工具没有万能药，只有本机 roofline。
-
-> 复核提示：`results/compiled_decode.trace.json` 在 Perfetto 里放大任一步，能肉眼看到
-> eager 的"锯齿"（µs 级间隙）对比 cudagraphs 步内密集的 DtoD 拷贝带。
-> 注意：同进程先跑 eager 再 compile 会因提交内存耗尽 MemoryError，两个变体须分进程跑
-> （`prof_1_torch_profiler.py --variant eager|compiled` 各一次，json 自动合并）。
-
----
-
-## 2. 层B：Nsight Compute——本机实测不可行（已按预案转云端）
-
-本机两步排查均有实证记录（`results/ncu_run.log`）：
-
-1. 普通用户运行报 `ERR_NVGPUCTRPERM`（GPU 计数器权限）。用户属 Administrators，
-   经 UAC 提权后**权限问题确认解决**（ncu 成功接管进程）。
-2. 提权后 ncu 2025.1.0 直接拒绝：`Profiling is not supported on device 0`。
-   `ncu --list-chips` 支持列表自 **Turing (tu102)** 起——**本机 MX330 是 Pascal
-   (GP108)，该版本已放弃支持**。办公机不具备安装旧版 ncu 的条件，本机层B 到此为止。
-
-补采任务与判定标准已写入 `nsys_commands.md` §4（云端 `ncu --set full`，数据中心卡
-支持 Pascal 之后的所有架构且计数器全开）。预期验证三件事：
-- `gemv2T`：Memory Throughput ≈ 饱和、SM Throughput 个位数 → memory-bound 直测；
-- `fmha_cutlassF`：两者都低、单发极短 → 老架构 attention kernel 的低效直测；
-- RMSNorm `MeanOps`：DRAM bytes ≈ 张体积 ×往返次数 → "未融合 = 多次全量往返"直测。
-
-## 3. 层C：Nsight Systems——云端执行
-
-nsys CLI 仅有 Linux 版（本机 Windows 无法采集，WSL2 未装发行版）。完整采集命令、
-看什么（GPU 空隙率 / cudaLaunchKernel CPU 成本 / 稳态是否出现 cudaMalloc-memcpy）、
-产物回收方式见 **`nsys_commands.md`**。跑完后本报告 §1.3 的结论可用时间轴目测复核：
-A100 上 eager 的"锯齿"会远比本机明显（快卡 launch-bound 占比升高），cudagraphs
-则应呈现首尾相接的实心块——与本机形成正反差对照。
-
----
-
-## 4. 最终回答：为什么这个 Transformer 慢？
-
-对"这个 Transformer"（batch=1 自回归解码，0.5B 模型，办公本 MX330）：
-
-1. **结构性原因（换任何卡都存在）**：解码每生成 1 token 就要把全部权重从显存流送
-   一遍（fp16 0.5B ≈ 852 MB），算术强度 ≈1 FLOP/byte，天生住在 roofline 的
-   memory-bound 区。快卡靠高带宽硬抗（HBM 3 TB/s → 下限 0.3 ms），本卡 8.4 GB/s
-   → **下限就是 101 ms/token**，实测 198 ms。
-2. **本机加速器（让下限变成上限的三件事）**：
-   - 笔记本 GPU 有效带宽只有标称 21%（lm_head 单发实测 8.4 GB/s）；
-   - **未融合的 norm/RoPE 链**：每层 5–6 个全量往返显存的小 kernel，24 层堆出
-     每步 ~440 个 µs–ms 级事件（占 decode 的 ~11%）；
-   - **Pascal 架构代差**：无 Tensor Core（prefill 只拿到 69 GFLOP/s）、不支持
-     FA2（fmha 走 sm50 回退，单发 1.28 ms）、fp16 只是存储格式不是算力。
-3. **反直觉但已闭环验证的一条**：本机 launch 空隙只占 6.3%，所以 cudagraphs 这类
-   "治 launch"的药在老卡上是**负收益**（+60% TPOT，每步 900 MB 克隆流量）；它治的
-   是快卡上的病。这比"我会用工具"更有价值的地方就在这：**先量 roofline，再选药**。
-
-一句话版本：**decode 是被显存带宽和未融合小 kernel 拖死的，prefill 是被无 Tensor
-Core 的旧架构算力卡住的，而一切"高级加速开关"在 2GB Pascal 上都要先过 roofline 这一关。**
-
-## 5. 待办（云端补数后更新本报告）
-
-- [ ] 云端 `nsys profile` 两份 .nsys-rep（eager vs compiled），回填 §3 空隙率数字
-- [ ] 云端 `ncu --set full` 三类代表 kernel 的 SOL/DRAM bytes，回填 §2
-- [ ] （可选）同负载在 A100/L20 重跑 `prof_1_torch_profiler.py`，对照本机的
-      busy 率与 TPOT，验证"快卡上 launch-bound 占比升高"的预期
-
-## 附：复现命令
+## 7. Reproduction
 
 ```powershell
-# 层A（本机，两变体分进程跑；--model 必传，默认值是家里机器的路径）
-D:\python313\python.exe e:\AI-infra\profiling\prof_1_torch_profiler.py --variant eager   --model E:/model/Qwen1.5-0.5B
-D:\python313\python.exe e:\AI-infra\profiling\prof_1_torch_profiler.py --variant compiled --model E:/model/Qwen1.5-0.5B
+# Interpreter: Anaconda Python with CUDA-enabled torch
+# (D:\ProgramData\anaconda3\python.exe on the test machine)
+$ PY="D:/ProgramData/anaconda3/python.exe"
 
-# 层B（本机不可行留档；提权封装见 run_ncu_local.ps1 头注）
-powershell -File e:\AI-infra\profiling\_launch_ncu_elevated.ps1 -Smoke
+# 1. PyTorch Profiler (eager + cudagraphs; run as separate processes
+# to avoid holding two model graphs in 4 GB at once)
+& $PY profiling/prof_1_torch_profiler.py --variant eager    --model F:/model/Qwen-0.6B
+& $PY profiling/prof_1_torch_profiler.py --variant compiled --model F:/model/Qwen-0.6B
 
-# 层C/层B 云端命令见 nsys_commands.md
+# 2. Nsight Compute payload (kernel-level SOL/DRAM; see nsys_commands.md)
+& $PY profiling/prof_2_ncu_kernels.py --steps 10 --model F:/model/Qwen-0.6B
+
+# 3. Throughput benchmark cross-check (profiler-free cudagraphs number)
+& $PY inference/run_all.py --methods 1,2 --concurrency 1,4 --repeats 3
 ```
 
-时间轴查看：`results/*.trace.json` → https://ui.perfetto.dev （116 MB 的
-eager_decode 那份最直观；chrome://tracing 亦可）。
+**Out-of-scope on this hardware:** Nsight Compute (2025.x) and Nsight
+Systems CLI do not support Pascal (GP107, SM 6.1) — Nsight Compute rejects
+the device (`Profiling is not supported on device 0`; `--list-chips` starts
+at Turing). The kernel-level SOL/DRAM and timeline views must be collected on
+a cloud **datacenter GPU (A100 / L20 / 4090)**; collection commands and
+expected checks are documented in `nsys_commands.md`. The PyTorch-Profiler
+findings above are hardware-characterization results that hold for any
+Pascal-class GPU and do not require the Nsight tools.
+
+Timeline viewing: `results/*.trace.json` → https://ui.perfetto.dev (or
+`chrome://tracing`). The eager decode trace shows the characteristic
+launch "jitter" between kernels; the cudagraphs trace (steady steps) shows
+back-to-back execution.

@@ -1,11 +1,11 @@
 """
-Experiment 4 / 层A：PyTorch Profiler 证据采集
+PyTorch Profiler 算子级瓶颈定位
 
-回答的问题：慢在哪个算子？kernel 数量/空隙/访存拷贝占多少？GPU 忙不忙？
+回答的问题：慢在哪个算子？kernel 数量 / 空隙 / 访存拷贝占多少？GPU 忙不忙？
 
-与 Experiment 2 同一模型、同一负载（Qwen-0.6B fp16, workload A），但
-prefill 与 decode 两条路径**分开采集**——它们慢的原因完全不同，混在
-一起会被平均掉。对每个变体输出：
+与 throughput benchmark（inference/bench_1、bench_2）同一模型、同一负载
+（Qwen-0.6B fp16, workload A），但 prefill 与 decode 两条路径**分开采集**
+——它们慢的原因完全不同，混在一起会被平均掉。对每个变体输出：
   1. key_averages 表（按 self_cuda_time_total 排序）-> results/*.txt
   2. chrome trace JSON（chrome://tracing / Perfetto 打开，eager 的
      "锯齿" vs cudagraphs 的"实心块"肉眼可见）      -> results/*.json
@@ -104,8 +104,12 @@ def compute_metrics(trace_path, wall_s, steps):
         d = by_name.setdefault(nm, [0, 0.0])
         d[0] += 1
         d[1] += e.get("dur", 0)
-    top_agg = sorted(((n, c, us) for n, (c, us) in by_name.items()),
-                     key=lambda x: -x[2])[:12]
+    # 设备核级热点（mangled kernel name）。这是从 chrome trace 的 cat==kernel
+    # 事件直接聚合的——与脚本打印的 key_averages 表格里**设备核行**完全对应
+    # （例如 gemv 在 trace 聚合与表格里都是同一数值），因此 JSON 字段与报告
+    # 表格自洽。算子级（aten::*）归因见 results/*.table.txt。
+    top_kernels = sorted(((n, c, round(us, 1)) for n, (c, us) in by_name.items()),
+                         key=lambda x: -x[2])[:12]
     m = {
         "wall_ms": wall_s * 1e3,
         "wall_per_step_ms": (wall_s * 1e3 / steps) if steps else None,
@@ -118,7 +122,7 @@ def compute_metrics(trace_path, wall_s, steps):
         "num_memset": len(mset),
         "memcpy_mb": mb / 2**20,
         "unique_kernel_names": len({e["name"] for e in kern}),
-        "top_kernels_by_total_us": top_agg,
+        "top_kernels_by_total_us": top_kernels,
         "steady": steady,
     }
     return m
@@ -273,7 +277,7 @@ def variant_compiled(model, tokenizer, device, input_len, steps):
 
 
 def main():
-    p = argparse.ArgumentParser(description="Experiment 4 / torch.profiler evidence")
+    p = argparse.ArgumentParser(description="Operator-level bottleneck attribution via PyTorch Profiler")
     p.add_argument("--model", default=DEFAULT_MODEL)
     p.add_argument("--device", default="cuda")
     p.add_argument("--variant", default="both", choices=["eager", "compiled", "both"])
