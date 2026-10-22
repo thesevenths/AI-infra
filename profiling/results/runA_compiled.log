@@ -1,0 +1,64 @@
+﻿python.exe : `torch_dtype` is deprecated! Use `dtype` instead!
+所在位置 行:1 字符: 1
++ & D:\python313\python.exe -u e:\AI-infra\profiling\prof_1_torch_profi ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (`torch_dtype` i...dtype` instead!:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[compile] backend=cudagraphs (SM6.1)
+D:\python313\Lib\site-packages\torch\_dynamo\guards.py:1464: RuntimeWarning: Guards may run slower on Python 3.13.0. Co
+nsider upgrading to Python 3.13.1+.
+  warnings.warn(
+USDT:2026-10-22 10:36:30 59728:53244 C:\actions-runner\_work\pytorch\pytorch\third_party\kineto\libkineto\src\SyncActiv
+ityProfilerHandler.cpp:39] profiler_start
+D:\python313\Lib\site-packages\torch\_dynamo\guards.py:1464: RuntimeWarning: Guards may run slower on Python 3.13.0. Co
+nsider upgrading to Python 3.13.1+.
+  warnings.warn(
+USDT:2026-10-22 10:37:01 59728:53244 C:\actions-runner\_work\pytorch\pytorch\third_party\kineto\libkineto\src\SyncActiv
+ityProfilerHandler.cpp:46] profiler_stop
+--- compiled_decode ---
+    wall_ms: 29860.263099893928
+    wall_per_step_ms: 995.3421033297976
+    gpu_busy_ratio: 0.3106497751228051
+    kernel_time_sum_ms: 5989.510911
+    num_kernels: 34051
+    kernels_per_step: 1135.0333333333333
+    avg_kernel_us: 175.89823826025668
+    num_memcpy: 13578
+    num_memset: 30
+    memcpy_mb: 26983.172508239746
+    unique_kernel_names: 36
+    steady: {'steady_tpot_ms': 316.2257515, 'steady_busy': 0.9723050792199733, 'steady_kernels_per_step': 1597.0, 'steady_kernel_ms_per_step': 307.4969045}
+    top kernels (name, count, total_us):
+         3532.4 ms x2910   _Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2ELi4ELb0ELb0E18cublasGemvParamsExIi30cublasGemvTensorStrid
+          996.1 ms x720    _Z39fmha_cutlassF_f16_aligned_64x64_rf_sm50N22PyTorchMemEffAttention15AttentionKernelIN7cutlass6half_tENS1_4ar
+          774.6 ms x2160   _Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2ELi4ELb0ELb1E18cublasGemvParamsExIi30cublasGemvTensorStrid
+           81.7 ms x2880   _ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22gpu_kernel_impl_nocastINS0_13BinaryFunctorIN3c104HalfES5_S5
+           68.4 ms x1500   _ZN2at6native27unrolled_elementwise_kernelIZZZNS0_23direct_copy_kernel_cudaERNS_18TensorIteratorBaseEENKUlvE1_
+           55.6 ms x1470   _ZN2at6native13reduce_kernelILi512ELi1ENS0_8ReduceOpIfNS0_7MeanOpsIffffEEjfLi4ELi4EEEEEvT1_
+           53.5 ms x1440   _ZN2at6native24index_elementwise_kernelILi128ELi4EZNS0_22index_copy_kernel_implINS0_10OpaqueTypeILi2EEEEEvRNS_
+           50.9 ms x1440   _ZN2at6native40_GLOBAL__N__27eda9f4_8_Shape_cu_85d9f36c19CatArrayBatchedCopyINS1_10OpaqueTypeILj2EEEjLi4ELi64E
+           50.7 ms x2880   _ZN2at6native29vectorized_elementwise_kernelILi4ENS0_15CUDAFunctor_addIN3c104HalfEEESt5arrayIPcLy3EELb0EEEviT0
+           42.5 ms x1440   _ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22gpu_kernel_impl_nocastIZZZNS0_15neg_kernel_cudaERNS_18Tenso
+           41.8 ms x2190   _ZN2at6native29vectorized_elementwise_kernelILi4ENS0_13BinaryFunctorIN3c104HalfES4_S4_NS0_15binary_internal10M
+           32.3 ms x1470   _ZN2at6native18elementwise_kernelILi128ELi2EZNS0_22gpu_kernel_impl_nocastINS0_13BinaryFunctorIfffNS0_15binary_
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                                   Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg    # of Calls  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                          decode_step_0         0.00%       0.000us         0.00%       0.000us       0.000us       20.747s       223.66%       20.747s       10.373s             2  
+                             Torch-Compiled Region: 0/1         1.24%     371.494ms         5.86%        1.749s      58.293ms        5.885s        63.45%        9.271s     309.017ms            30  
+_Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2...         0.00%       0.000us         0.00%       0.000us       0.000us        3.532s        38.08%        3.532s       1.214ms          2910  
+                         Memcpy DtoD (Device -> Device)         0.00%       0.000us         0.00%       0.000us       0.000us        3.286s        35.43%        3.286s     242.600us         13547  
+                                            aten::copy_         0.41%     122.384ms        27.92%        8.334s     707.200us        3.134s        33.79%        3.134s     265.964us         11785  
+_Z39fmha_cutlassF_f16_aligned_64x64_rf_sm50N22PyTorc...         0.00%       0.000us         0.00%       0.000us       0.000us     996.075ms        10.74%     996.075ms       1.383ms           720  
+_Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2...         0.00%       0.000us         0.00%       0.000us       0.000us     774.567ms         8.35%     774.567ms     358.596us          2160  
+                                          decode_step_1         0.00%       0.000us         0.00%       0.000us       0.000us     760.759ms         8.20%     760.759ms     380.379ms             2  
+                                          decode_step_2         0.00%       0.000us         0.00%       0.000us       0.000us     327.958ms         3.54%     327.958ms     327.958ms             1  
+                                         decode_step_28         0.00%       0.000us         0.00%       0.000us       0.000us     319.822ms         3.45%     319.822ms     319.822ms             1  
+                                         decode_step_27         0.00%       0.000us         0.00%       0.000us       0.000us     318.457ms         3.43%     318.457ms     318.457ms             1  
+                                         decode_step_29         0.00%       0.000us         0.00%       0.000us       0.000us     318.307ms         3.43%     318.307ms     318.307ms             1  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+Self CPU time total: 29.856s
+Self CUDA time total: 9.276s
+
+metrics -> E:\AI-infra\profiling\results\prof_metrics.json

@@ -1,0 +1,106 @@
+﻿python.exe : `torch_dtype` is deprecated! Use `dtype` instead!
+所在位置 行:1 字符: 1
++ & D:\python313\python.exe -u e:\AI-infra\profiling\prof_1_torch_profi ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (`torch_dtype` i...dtype` instead!:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+USDT:2026-10-22 10:34:31 47180:70948 C:\actions-runner\_work\pytorch\pytorch\third_party\kineto\libkineto\src\SyncActiv
+ityProfilerHandler.cpp:39] profiler_start
+USDT:2026-10-22 10:34:32 47180:70948 C:\actions-runner\_work\pytorch\pytorch\third_party\kineto\libkineto\src\SyncActiv
+ityProfilerHandler.cpp:46] profiler_stop
+--- eager_prefill ---
+    wall_ms: 1016.0232000052929
+    wall_per_step_ms: None
+    gpu_busy_ratio: 0.9880545079810047
+    kernel_time_sum_ms: 1003.884767
+    num_kernels: 1161
+    kernels_per_step: None
+    avg_kernel_us: 864.6724952627046
+    num_memcpy: 1
+    num_memset: 0
+    memcpy_mb: 0.0009765625
+    unique_kernel_names: 38
+    steady: {'steady_tpot_ms': None, 'steady_busy': None, 'steady_kernels_per_step': None, 'steady_kernel_ms_per_step': None}
+    top kernels (name, count, total_us):
+          337.6 ms x48     hgemm_128x128x8_NT_vec
+          249.8 ms x48     hgemm_32x32x32_NT_vec
+          219.5 ms x72     maxwell_fp16_sgemm_fp16_32x128_tn
+           50.4 ms x24     _Z39fmha_cutlassF_f16_aligned_64x64_rf_sm50N22PyTorchMemEffAttention15AttentionKernelIN7cutlass6half_tENS1_4ar
+           37.1 ms x1      _Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2ELi4ELb0ELb0E18cublasGemvParamsExIi30cublasGemvTensorStrid
+           25.0 ms x145    _ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22gpu_kernel_impl_nocastINS0_13BinaryFunctorIN3c104HalfES5_S5
+           17.7 ms x48     _ZN2at6native40_GLOBAL__N__27eda9f4_8_Shape_cu_85d9f36c19CatArrayBatchedCopyINS1_10OpaqueTypeILj2EEEjLi4ELi64E
+           13.4 ms x48     _ZN2at6native24index_elementwise_kernelILi128ELi4EZNS0_22index_copy_kernel_implINS0_10OpaqueTypeILi2EEEEEvRNS_
+            9.9 ms x50     _ZN2at6native27unrolled_elementwise_kernelIZZZNS0_23direct_copy_kernel_cudaERNS_18TensorIteratorBaseEENKUlvE1_
+            9.6 ms x48     _ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22gpu_kernel_impl_nocastINS0_15CUDAFunctor_addIN3c104HalfEEEE
+            8.1 ms x49     _ZN2at6native18elementwise_kernelILi128ELi2EZNS0_22gpu_kernel_impl_nocastINS0_13BinaryFunctorIfffNS0_15binary_
+            4.9 ms x24     _ZN2at6native29vectorized_elementwise_kernelILi4EZZZNS0_62_GLOBAL__N__a30504db_23_ActivationSiluKernel_cu_7e2d
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                                   Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg    # of Calls  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                               aten::mm         0.32%       3.117ms         0.46%       4.545ms      46.860us     624.454ms        62.20%     624.454ms       6.438ms            97  
+                                 hgemm_128x128x8_NT_vec         0.00%       0.000us         0.00%       0.000us       0.000us     337.576ms        33.63%     337.576ms       7.033ms            48  
+                                  hgemm_32x32x32_NT_vec         0.00%       0.000us         0.00%       0.000us       0.000us     249.784ms        24.88%     249.784ms       5.204ms            48  
+                                            aten::addmm         0.32%       3.141ms         0.43%       4.237ms      58.842us     219.520ms        21.87%     219.520ms       3.049ms            72  
+                      maxwell_fp16_sgemm_fp16_32x128_tn         0.00%       0.000us         0.00%       0.000us       0.000us     219.520ms        21.87%     219.520ms       3.049ms            72  
+                     aten::_efficient_attention_forward         0.09%     871.808us         0.41%       4.059ms     169.110us      50.427ms         5.02%      50.833ms       2.118ms            24  
+_Z39fmha_cutlassF_f16_aligned_64x64_rf_sm50N22PyTorc...         0.00%       0.000us         0.00%       0.000us       0.000us      50.427ms         5.02%      50.427ms       2.101ms            24  
+_Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2...         0.00%       0.000us         0.00%       0.000us       0.000us      37.093ms         3.69%      37.093ms      37.093ms             1  
+                                              aten::mul         0.51%       5.014ms         0.80%       7.921ms      36.007us      36.142ms         3.60%      36.142ms     164.281us           220  
+_ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22g...         0.00%       0.000us         0.00%       0.000us       0.000us      25.022ms         2.49%      25.022ms     172.563us           145  
+                                              aten::cat         0.12%       1.196ms         0.21%       2.051ms      41.847us      17.723ms         1.77%      17.723ms     361.698us            49  
+_ZN2at6native40_GLOBAL__N__27eda9f4_8_Shape_cu_85d9f...         0.00%       0.000us         0.00%       0.000us       0.000us      17.685ms         1.76%      17.685ms     368.441us            48  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+Self CPU time total: 988.106ms
+Self CUDA time total: 1.004s
+
+USDT:2026-10-22 10:34:33 47180:70948 C:\actions-runner\_work\pytorch\pytorch\third_party\kineto\libkineto\src\SyncActiv
+ityProfilerHandler.cpp:39] profiler_start
+USDT:2026-10-22 10:34:41 47180:70948 C:\actions-runner\_work\pytorch\pytorch\third_party\kineto\libkineto\src\SyncActiv
+ityProfilerHandler.cpp:46] profiler_stop
+--- eager_decode ---
+    wall_ms: 5820.133099798113
+    wall_per_step_ms: 194.0044366599371
+    gpu_busy_ratio: 0.9273002613578181
+    kernel_time_sum_ms: 5390.06392
+    num_kernels: 34081
+    kernels_per_step: 1136.0333333333333
+    avg_kernel_us: 158.15451189812507
+    num_memcpy: 751
+    num_memset: 30
+    memcpy_mb: 0.2173309326171875
+    unique_kernel_names: 36
+    steady: {'steady_tpot_ms': 198.19172500000002, 'steady_busy': 0.9370219201963983, 'steady_kernels_per_step': 1159.0, 'steady_kernel_ms_per_step': 186.4561645}
+    top kernels (name, count, total_us):
+         3215.2 ms x2910   _Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2ELi4ELb0ELb0E18cublasGemvParamsExIi30cublasGemvTensorStrid
+          921.2 ms x720    _Z39fmha_cutlassF_f16_aligned_64x64_rf_sm50N22PyTorchMemEffAttention15AttentionKernelIN7cutlass6half_tENS1_4ar
+          709.8 ms x2160   _Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2ELi4ELb0ELb1E18cublasGemvParamsExIi30cublasGemvTensorStrid
+           62.1 ms x2880   _ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22gpu_kernel_impl_nocastINS0_13BinaryFunctorIN3c104HalfES5_S5
+           59.1 ms x1500   _ZN2at6native27unrolled_elementwise_kernelIZZZNS0_23direct_copy_kernel_cudaERNS_18TensorIteratorBaseEENKUlvE1_
+           45.6 ms x1470   _ZN2at6native13reduce_kernelILi512ELi1ENS0_8ReduceOpIfNS0_7MeanOpsIffffEEjfLi4ELi4EEEEEvT1_
+           42.8 ms x1440   _ZN2at6native24index_elementwise_kernelILi128ELi4EZNS0_22index_copy_kernel_implINS0_10OpaqueTypeILi2EEEEEvRNS_
+           41.3 ms x1440   _ZN2at6native40_GLOBAL__N__27eda9f4_8_Shape_cu_85d9f36c19CatArrayBatchedCopyINS1_10OpaqueTypeILj2EEEjLi4ELi64E
+           40.1 ms x2880   _ZN2at6native29vectorized_elementwise_kernelILi4ENS0_15CUDAFunctor_addIN3c104HalfEEESt5arrayIPcLy3EELb0EEEviT0
+           32.7 ms x2190   _ZN2at6native29vectorized_elementwise_kernelILi4ENS0_13BinaryFunctorIN3c104HalfES4_S4_NS0_15binary_internal10M
+           32.1 ms x1440   _ZN2at6native18elementwise_kernelILi128ELi4EZNS0_22gpu_kernel_impl_nocastIZZZNS0_15neg_kernel_cudaERNS_18Tenso
+           24.4 ms x1470   _ZN2at6native29vectorized_elementwise_kernelILi4EZZZNS0_17rsqrt_kernel_cudaERNS_18TensorIteratorBaseEENKUlvE0_
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                                   Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg    # of Calls  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+                                               aten::mm         1.60%     108.276ms         2.20%     149.072ms      51.228us        3.215s        59.57%        3.215s       1.105ms          2910  
+_Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2...         0.00%       0.000us         0.00%       0.000us       0.000us        3.215s        59.57%        3.215s       1.105ms          2910  
+                     aten::_efficient_attention_forward         0.39%      26.382ms         1.51%     102.398ms     142.220us     921.189ms        17.07%     935.019ms       1.299ms           720  
+_Z39fmha_cutlassF_f16_aligned_64x64_rf_sm50N22PyTorc...         0.00%       0.000us         0.00%       0.000us       0.000us     921.189ms        17.07%     921.189ms       1.279ms           720  
+                                            aten::addmm         1.18%      79.627ms         1.63%     110.479ms      51.148us     709.765ms        13.15%     709.765ms     328.595us          2160  
+_Z17gemv2T_kernel_valIii6__halfS0_S0_fLi128ELi16ELi2...         0.00%       0.000us         0.00%       0.000us       0.000us     709.765ms        13.15%     709.765ms     328.595us          2160  
+                                          decode_step_0         0.00%       0.000us         0.00%       0.000us       0.000us     214.979ms         3.98%     214.979ms     214.979ms             1  
+                                         decode_step_26         0.00%       0.000us         0.00%       0.000us       0.000us     209.990ms         3.89%     209.990ms     209.990ms             1  
+                                         decode_step_23         0.00%       0.000us         0.00%       0.000us       0.000us     209.693ms         3.89%     209.693ms     209.693ms             1  
+                                         decode_step_29         0.00%       0.000us         0.00%       0.000us       0.000us     209.105ms         3.87%     209.105ms     209.105ms             1  
+                                         decode_step_25         0.00%       0.000us         0.00%       0.000us       0.000us     207.950ms         3.85%     207.950ms     207.950ms             1  
+                                         decode_step_24         0.00%       0.000us         0.00%       0.000us       0.000us     207.785ms         3.85%     207.785ms     207.785ms             1  
+-------------------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  
+Self CPU time total: 6.772s
+Self CUDA time total: 5.397s
+
+metrics -> E:\AI-infra\profiling\results\prof_metrics.json

@@ -1,0 +1,3 @@
+==PROF== Connected to process 57848 (D:\python313\python.exe)
+==ERROR== Profiling is not supported on device 0. To find out supported GPUs refer --list-chips option.
+==PROF== Disconnected from process 57848
